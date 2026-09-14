@@ -42,7 +42,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiBaseUrl": "http://localhost:5000"
+      "apiBaseUrl": "https://ksbackend-api.onrender.com"
     }
   }
 }
