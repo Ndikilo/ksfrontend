@@ -149,7 +149,15 @@ attached to every `/v1/*` request; sessions are re-validated against
 `/api/auth/get-session` on cold start (an offline device keeps its session; a
 revoked one is cleared).
 
-1. **Run the backend** (from the `ksbackend` repo — needs Bun + Docker):
+**Hosted (recommended for device testing):** a one-click Render deployment of
+the API exists on the backend fork — open
+<https://render.com/deploy?repo=https://github.com/Ndikilo/ksbackend>, sign in
+with GitHub, and Render provisions the API + Postgres (free tier, staging
+configuration, migrations run automatically). See the backend's
+`docs/deploy-render.md` for OTP email setup and seeding. Then set
+`expo.extra.apiBaseUrl` in `app.json` to your `https://<app>.onrender.com` URL.
+
+1. **Run the backend locally** (from the `ksbackend` repo — needs Bun + Docker):
    ```bash
    bun run setup   # deps, .env.local, Postgres, env validation
    bun run dev     # API on http://localhost:5000
