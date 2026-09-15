@@ -119,7 +119,49 @@ export const fr: Translations = {
 
   tabs: {
     home: 'Accueil',
+    search: 'Trouver soins',
     profile: 'Profil',
+  },
+
+  search: {
+    title: 'Trouver des soins',
+    subtitle: 'Réservez des médecins et infirmiers vérifiés près de chez vous',
+    searchPlaceholder: 'Rechercher par nom ou spécialité…',
+    allProfessions: 'Tous',
+    consultation: 'Type de consultation',
+    inPerson: 'En personne',
+    video: 'Vidéo',
+    homeVisit: 'À domicile',
+    sortBy: 'Trier par',
+    sort: {
+      rating: 'Mieux notés',
+      availability: 'Disponibles bientôt',
+      fee: 'Tarif le plus bas',
+      experience: 'Les plus expérimentés',
+      name: 'Nom A–Z',
+      recency: 'Nouveautés',
+    },
+    resultsCount: '{{count}} praticien(s) trouvé(s)',
+    loadMore: 'Charger plus',
+    noResultsTitle: 'Aucun praticien trouvé',
+    noResultsMessage: 'Essayez de modifier votre recherche ou de retirer un filtre.',
+    clearFilters: 'Réinitialiser les filtres',
+  },
+
+  practitioner: {
+    verified: 'Vérifié',
+    yearsExperience: '{{years}} ans d’expérience',
+    nextAvailable: 'Prochaine dispo {{when}}',
+    about: 'À propos',
+    noBio: 'Ce praticien n’a pas encore ajouté de présentation.',
+    consultationOptions: 'Options de consultation',
+    minutes: '{{count}} min',
+    languages: 'Langues',
+    locations: 'Lieux de pratique',
+    qualifications: 'Diplômes et qualifications',
+    bookNow: 'Prendre rendez-vous',
+    bookingNotice: 'La réservation et les paiements arrivent bientôt — vous pourrez réserver cette consultation ici même.',
+    notFound: 'Ce praticien n’est pas disponible.',
   },
 
   home: {

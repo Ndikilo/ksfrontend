@@ -35,4 +35,10 @@ export const endpoints = {
     professions: '/v1/professions',
     languages: '/v1/languages',
   },
+  practitioners: {
+    /** Search (offset-paginated). */
+    search: '/v1/practitioners',
+    /** Public bookable profile of a verified practitioner. */
+    byId: (id: string) => `/v1/practitioners/${id}`,
+  },
 } as const;

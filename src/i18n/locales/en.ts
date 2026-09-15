@@ -119,7 +119,49 @@ export const en = {
 
   tabs: {
     home: 'Home',
+    search: 'Find Care',
     profile: 'Profile',
+  },
+
+  search: {
+    title: 'Find Care',
+    subtitle: 'Book verified doctors and nurses near you',
+    searchPlaceholder: 'Search by name or specialty…',
+    allProfessions: 'All',
+    consultation: 'Consultation type',
+    inPerson: 'In person',
+    video: 'Video',
+    homeVisit: 'Home visit',
+    sortBy: 'Sort by',
+    sort: {
+      rating: 'Top rated',
+      availability: 'Soonest available',
+      fee: 'Lowest fee',
+      experience: 'Most experienced',
+      name: 'Name A–Z',
+      recency: 'Newest',
+    },
+    resultsCount: '{{count}} practitioner(s) found',
+    loadMore: 'Load more',
+    noResultsTitle: 'No practitioners found',
+    noResultsMessage: 'Try adjusting your search or clearing a filter.',
+    clearFilters: 'Clear filters',
+  },
+
+  practitioner: {
+    verified: 'Verified',
+    yearsExperience: '{{years}} yrs experience',
+    nextAvailable: 'Next available {{when}}',
+    about: 'About',
+    noBio: 'This practitioner has not added a bio yet.',
+    consultationOptions: 'Consultation options',
+    minutes: '{{count}} min',
+    languages: 'Languages',
+    locations: 'Practice locations',
+    qualifications: 'Qualifications',
+    bookNow: 'Book appointment',
+    bookingNotice: 'Booking and payments are coming soon — you will be able to reserve this consultation right here.',
+    notFound: 'This practitioner is not available.',
   },
 
   home: {

@@ -141,3 +141,102 @@ export type Language = {
   nameEn: string;
   nameFr: string;
 };
+
+// ---------------------------------------------------------------------------
+// Practitioner search & profiles (GET /v1/practitioners, GET /v1/practitioners/:id)
+// ---------------------------------------------------------------------------
+
+/** Consultation delivery options the backend supports. */
+export type ConsultationType = 'in_person' | 'video' | 'home_visit';
+
+/** Sort options for practitioner search. */
+export type PractitionerSort =
+  | 'availability'
+  | 'distance'
+  | 'rating'
+  | 'fee'
+  | 'experience'
+  | 'name'
+  | 'recency';
+
+export type PractitionerRating = { average: number; count: number };
+
+/** Card shape returned by practitioner search. */
+export type PractitionerCard = {
+  id: ID;
+  professionId: ID;
+  profession: Profession;
+  languages: Language[];
+  prefix: string | null;
+  surname: string;
+  givenNames: string;
+  specialty: string | null;
+  location: string | null;
+  consultationTypes: ConsultationType[] | null;
+  consultationFeeXaf: number | null;
+  rating: PractitionerRating;
+  nextAvailableAt: string | null;
+  distanceKm: number | null;
+  photoUrl: string | null;
+};
+
+export type PractitionerOffering = {
+  id: ID;
+  consultationType: ConsultationType;
+  durationMin: number;
+  priceXaf: number;
+  active: boolean;
+};
+
+export type PractitionerQualification = {
+  id: ID;
+  kind: string;
+  title: string;
+  institution: string;
+  country: string;
+  year: number;
+  sortOrder: number;
+  verifiedAt: string | null;
+};
+
+export type PractitionerLocation = {
+  id: ID;
+  label: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  region: string;
+  country: string;
+  consultationTypes: ConsultationType[];
+  isPrimary: boolean;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+/** Public bookable profile returned for a verified practitioner. */
+export type PractitionerDetail = {
+  id: ID;
+  professionId: ID;
+  profession: Profession;
+  prefix: string | null;
+  surname: string;
+  givenNames: string;
+  location: string | null;
+  specialty: string | null;
+  bio: string | null;
+  languagesSpoken: string[] | null;
+  yearsExperience: number | null;
+  consultationFeeXaf: number | null;
+  consultationTypes: ConsultationType[] | null;
+  rating: PractitionerRating & { distribution: Record<string, number> };
+  verification: { status: string; body: string; registrationNumber: string };
+  booking: { bookable: boolean; reasons: string[] };
+  canReview: boolean;
+  photoUrl: string | null;
+  nextAvailableAt: string | null;
+  memberSince: string;
+  languages: Language[];
+  qualifications: PractitionerQualification[];
+  locations: PractitionerLocation[];
+  offerings: PractitionerOffering[];
+};

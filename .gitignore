@@ -3,6 +3,9 @@
 # dependencies
 node_modules/
 
+# Security hook local state
+.mimosa/
+
 # Expo
 .expo/
 dist/

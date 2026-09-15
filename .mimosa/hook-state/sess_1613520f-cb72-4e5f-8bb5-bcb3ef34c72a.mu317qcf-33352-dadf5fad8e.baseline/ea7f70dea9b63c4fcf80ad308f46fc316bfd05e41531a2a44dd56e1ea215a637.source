@@ -15,17 +15,14 @@ export default function TabsLayout() {
   if (status === 'loading') return <Spinner />;
   if (status === 'unauthenticated') return <Redirect href="/login" />;
 
-  const iconColor = (focused: boolean) =>
-    focused ? theme.colors.primary : theme.colors.textMuted;
-  const TabHomeIcon = ({ focused }: { focused: boolean }) => (
-    <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={iconColor(focused)} />
-  );
-  const TabSearchIcon = ({ focused }: { focused: boolean }) => (
-    <Ionicons name={focused ? 'search' : 'search-outline'} size={22} color={iconColor(focused)} />
-  );
-  const TabProfileIcon = ({ focused }: { focused: boolean }) => (
-    <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={iconColor(focused)} />
-  );
+  const icon = (name: keyof typeof Ionicons.glyphMap, focusedName: keyof typeof Ionicons.glyphMap) =>
+    ({ focused }: { focused: boolean }) => (
+      <Ionicons
+        name={focused ? focusedName : name}
+        size={22}
+        color={focused ? theme.colors.primary : theme.colors.textMuted}
+      />
+    );
 
   return (
     <Tabs
@@ -41,15 +38,15 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ title: t('tabs.home'), tabBarIcon: TabHomeIcon }}
+        options={{ title: t('tabs.home'), tabBarIcon: icon('home-outline', 'home') }}
       />
       <Tabs.Screen
         name="search"
-        options={{ title: t('tabs.search'), tabBarIcon: TabSearchIcon }}
+        options={{ title: t('tabs.search'), tabBarIcon: icon('search-outline', 'search') }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ title: t('tabs.profile'), tabBarIcon: TabProfileIcon }}
+        options={{ title: t('tabs.profile'), tabBarIcon: icon('person-outline', 'person') }}
       />
     </Tabs>
   );

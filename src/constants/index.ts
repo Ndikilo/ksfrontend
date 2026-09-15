@@ -29,6 +29,7 @@ export const AppConfig = {
 
 export { Images, LOGO_ASPECT_RATIO } from './assets';
 export { LANGUAGES, DEFAULT_LANGUAGE, type Language, type LanguageCode } from './languages';
+export { professionIcon, FALLBACK_PROFESSION_ICON } from './professionIcons';
 export {
   ONBOARDING_SLIDES,
   ONBOARDING_AUTOPLAY_MS,
