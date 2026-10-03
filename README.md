@@ -325,3 +325,12 @@ upload manually: `npx sentry-expo-upload-sourcemaps dist`.
 - `expo.android.versionCode` — integer, monotonic: `major*10000 + minor*100 +
   patch` (1.2.3 → 10203). Never reuse or go backwards per store rules.
 - Release tags cut from `main`; both fields bump in the same PR.
+
+## Build profiles (EAS)
+
+[`eas.json`](eas.json) defines `development` (dev client, local API),
+`preview` (internal distribution, staging API), and `production`. Each profile
+sets `EXPO_PUBLIC_API_BASE_URL`, which [`src/config/env.ts`](src/config/env.ts)
+prefers over `app.json > expo.extra.apiBaseUrl`, so one config serves every
+environment. Validate a profile without building:
+`eas build --profile production --platform android --local` (requires `eas login`).

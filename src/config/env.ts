@@ -35,7 +35,15 @@ function required(value: string | undefined, name: string): string {
   return value;
 }
 
-const configuredBaseUrl = required(extra.apiBaseUrl, 'apiBaseUrl');
+/**
+ * Base URL resolution order: EAS build env (`EXPO_PUBLIC_API_BASE_URL`, inlined
+ * per profile from eas.json at bundle time — the per-profile override) →
+ * `app.json > expo.extra.apiBaseUrl` (the committed default).
+ */
+const configuredBaseUrl = required(
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? extra.apiBaseUrl,
+  'apiBaseUrl',
+);
 
 /**
  * Release guard: mock authentication may only ever run in dev builds. A store
