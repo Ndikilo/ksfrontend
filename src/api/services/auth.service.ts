@@ -152,11 +152,9 @@ async function realVerifyRegistration(args: {
   const profile = email === pending?.email ? pending?.profile : undefined;
   if (!password) {
     // Flow restored after an app restart without the stored credentials.
-    throw apiError(
-      401,
-      'Email verified. Please sign in with your password to continue.',
-      'SESSION_REQUIRED',
-    );
+    // Localized here because this plain throw bypasses the axios interceptor
+    // (client.ts) — the only place envelope messages get localized.
+    throw apiError(401, i18n.t('errors.codes.SESSION_REQUIRED'), 'SESSION_REQUIRED');
   }
 
   const session = mapSession(
