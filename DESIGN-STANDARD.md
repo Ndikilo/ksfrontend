@@ -82,6 +82,12 @@ is the committed twin — keep them identical.
 - Money-adjacent terms are committed with their ACTUAL numbers before the user
   commits: the confirm step states the real cancellation notice window and fee
   (from the practitioner's policy), never "details shown after booking".
+- Error-recovery controls (retry, load-more retry) must actually RE-ISSUE the
+  failed request — a handler that only clears the error flag through a stale
+  closure is a dead tap (guard state read from the old render's callback).
+  A retry/refetch test must pin a NEW call (`toHaveBeenCalledTimes(n+1)` or
+  similar), never `toHaveBeenCalledWith` alone — that matcher matches earlier
+  calls already in the mock's history and passes vacuously.
 
 ## 3. Copy (no AI slop)
 
