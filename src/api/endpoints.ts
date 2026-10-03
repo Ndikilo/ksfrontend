@@ -56,4 +56,12 @@ export const endpoints = {
     reschedule: (id: string) => `/v1/appointments/${id}/reschedule`,
     cancel: (id: string) => `/v1/appointments/${id}/cancel`,
   },
+  payments: {
+    /** POST (checkout) — create/re-attach the charge for an appointment. */
+    root: '/v1/payments',
+    /** GET — status polling (the payer only). */
+    byId: (id: string) => `/v1/payments/${id}`,
+    /** GET — the appointment's latest charge + receipt data (payer only). */
+    byAppointment: (appointmentId: string) => `/v1/payments/by-appointment/${appointmentId}`,
+  },
 } as const;

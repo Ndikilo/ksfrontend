@@ -174,6 +174,18 @@ export default function AppointmentDetailScreen() {
 
       {actionable ? (
         <>
+          {/* The P5 path to `confirmed` is the payment — offer it first for
+              pending bookings (confirmed bookings drop straight to the
+              lifecycle actions). */}
+          {appointment.status === 'pending' ? (
+            <Button
+              title={t('appointments.payCta', {
+                amount: appointment.priceXaf.toLocaleString(),
+              })}
+              fullWidth
+              onPress={() => router.push(`/checkout/${appointment.id}`)}
+            />
+          ) : null}
           {rescheduling ? (
             <ReschedulePicker
               appointment={appointment}

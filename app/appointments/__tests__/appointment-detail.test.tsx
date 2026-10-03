@@ -13,11 +13,15 @@ jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
 // Expo Router seam — the screen reads the appointment id and goes back.
 const mockBack = jest.fn();
+const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'apt-1' }),
   router: {
     get back() {
       return mockBack;
+    },
+    get push() {
+      return mockPush;
     },
   },
 }));
@@ -289,15 +293,18 @@ describe('AppointmentDetailScreen (P4.T2)', () => {
     expect(await screen.findByText('Something went wrong')).toBeTruthy();
   });
 
-  it('a pending appointment explains itself (shows as confirmed here) with a Pending badge', async () => {
+  it('a pending appointment explains itself (payment is the path to confirmed) with a Pending badge and the Pay CTA', async () => {
     mockGet.mockResolvedValue({ ...APPOINTMENT, status: 'pending' });
     const screen = renderScreen();
     expect(
       await screen.findByText(
-        'The practitioner hasn’t confirmed this appointment yet — it will show as confirmed here once they do.',
+        'This appointment is reserved for you — it confirms as soon as your payment goes through.',
       ),
     ).toBeTruthy();
     expect(screen.getByTestId('appointment-status-pending')).toBeTruthy();
+    // P5: paying is how the booking confirms — the CTA opens checkout.
+    fireEvent.press(screen.getByText('Pay 5,000 XAF'));
+    expect(mockPush).toHaveBeenCalledWith('/checkout/apt-1');
   });
 
   it('SLOT_TAKEN on reschedule clears the dead slot and refetches availability', async () => {

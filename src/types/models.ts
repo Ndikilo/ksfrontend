@@ -301,3 +301,33 @@ export type Appointment = {
 
 /** The practitioner-configurable cancellation policy applied to NEW bookings. */
 export type BookingPolicy = { noticeHours: number; feeXaf: number };
+
+// --- Payments (P5) -----------------------------------------------------------
+
+/**
+ * Charge lifecycle (mirrors the backend `payment_status_enum`): initiated →
+ * pending → succeeded | failed, and succeeded → refunded. An appointment
+ * confirms ONLY when its charge succeeds.
+ */
+export type PaymentStatus = 'initiated' | 'pending' | 'succeeded' | 'failed' | 'refunded';
+
+/** The mobile-money rails (mirrors the backend `payment_provider_enum`). */
+export type PaymentProvider = 'momo' | 'orange_money';
+
+/** A mobile-money charge against one appointment. Money is integer XAF. */
+export type Payment = {
+  id: ID;
+  appointmentId: ID;
+  provider: PaymentProvider;
+  status: PaymentStatus;
+  amountXaf: number;
+  providerChargeId: string | null;
+  failureReason: string | null;
+  /** When the charge was refunded; set iff status is `refunded`. */
+  refundedAt: string | null;
+  /** Receipt number — set iff the charge succeeded; survives a refund. */
+  receiptNumber: string | null;
+  /** ISO-8601 receipt issue time; set iff `receiptNumber` is set. */
+  receiptIssuedAt: string | null;
+  createdAt: string;
+};

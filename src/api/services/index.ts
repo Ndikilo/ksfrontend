@@ -15,3 +15,4 @@ export {
   type PublicSlotsPage,
 } from './appointment.service';
 export { dependentsService } from './dependents.service';
+export { paymentsService, type InitiatePaymentInput } from './payment.service';

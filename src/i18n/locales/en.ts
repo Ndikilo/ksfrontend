@@ -160,10 +160,10 @@ export const en = {
     cancelConfirm: 'Yes, cancel',
     cancelKeep: 'Keep appointment',
     cancelledBanner: 'This appointment was cancelled.',
-    // Honest about today's capability: the status flips in THIS app (no
-    // notification exists yet — that lands with P6).
+    // True since P5: the appointment confirms when the payment succeeds —
+    // the banner points at the Pay action instead of a future notification.
     pendingBanner:
-      'The practitioner hasn’t confirmed this appointment yet — it will show as confirmed here once they do.',
+      'This appointment is reserved for you — it confirms as soon as your payment goes through.',
     lateCancelBanner:
       'Cancelled inside the {{hours}} h notice window — the {{fee}} XAF fee applies.',
     rescheduleTitle: 'Pick a new time',
@@ -173,6 +173,31 @@ export const en = {
     rescheduleEmptyAction: 'Refresh times',
     rescheduledBanner: 'Your appointment has been moved.',
     priceLabel: 'Price',
+    payCta: 'Pay {{amount}} XAF',
+  },
+
+  payments: {
+    title: 'Payment',
+    amountLabel: 'Amount due',
+    methodLabel: 'Payment method',
+    methodPlaceholder: 'Choose how to pay',
+    momo: 'MoMo',
+    orange: 'Orange Money',
+    phoneLabel: 'Mobile Money number',
+    phoneHint: 'The number of the wallet that will be debited.',
+    phoneInvalid: 'Enter the phone number of the wallet to debit.',
+    payNow: 'Pay {{amount}} XAF',
+    processingTitle: 'Confirm on your phone',
+    processingMessage: 'Approve the payment request sent to {{phone}}. This can take a moment.',
+    processingAction: 'I approved it — check again',
+    successTitle: 'Payment received',
+    successMessage: 'Your appointment is confirmed.',
+    receiptLabel: 'Receipt no.',
+    notPayable: 'This appointment can no longer be paid.',
+    failureTitle: 'Payment failed',
+    failureMessage: 'The payment didn’t go through — no money was taken.',
+    retryAction: 'Try again',
+    viewAppointment: 'View appointment',
   },
 
   search: {

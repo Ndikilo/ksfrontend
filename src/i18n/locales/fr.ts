@@ -160,10 +160,10 @@ export const fr: Translations = {
     cancelConfirm: 'Oui, annuler',
     cancelKeep: 'Garder le rendez-vous',
     cancelledBanner: 'Ce rendez-vous a été annulé.',
-    // Fidèle à la capacité actuelle : le statut change DANS l’application (pas
-    // encore de notification — elle arrivera avec P6).
+    // Vrai depuis P5 : le rendez-vous est confirmé dès que le paiement
+    // aboutit — le bandeau pointe vers l’action Payer, pas une notification.
     pendingBanner:
-      'Le praticien n’a pas encore confirmé ce rendez-vous — il apparaîtra comme confirmé ici dès que ce sera fait.',
+      'Ce rendez-vous vous est réservé — il sera confirmé dès que votre paiement aboutira.',
     lateCancelBanner:
       'Annulé dans le délai de {{hours}} h — des frais de {{fee}} XAF s’appliquent.',
     rescheduleTitle: 'Choisissez un nouvel horaire',
@@ -173,6 +173,31 @@ export const fr: Translations = {
     rescheduleEmptyAction: 'Actualiser les horaires',
     rescheduledBanner: 'Votre rendez-vous a été déplacé.',
     priceLabel: 'Prix',
+    payCta: 'Payer {{amount}} XAF',
+  },
+
+  payments: {
+    title: 'Paiement',
+    amountLabel: 'Montant à payer',
+    methodLabel: 'Moyen de paiement',
+    methodPlaceholder: 'Choisissez votre moyen de paiement',
+    momo: 'MoMo',
+    orange: 'Orange Money',
+    phoneLabel: 'Numéro Mobile Money',
+    phoneHint: 'Le numéro du portefeuille qui sera débité.',
+    phoneInvalid: 'Saisissez le numéro du portefeuille à débiter.',
+    payNow: 'Payer {{amount}} XAF',
+    processingTitle: 'Confirmez sur votre téléphone',
+    processingMessage: 'Validez la demande de paiement envoyée au {{phone}}. Cela peut prendre un instant.',
+    processingAction: 'C’est validé — revérifier',
+    successTitle: 'Paiement reçu',
+    successMessage: 'Votre rendez-vous est confirmé.',
+    receiptLabel: 'N° de reçu',
+    notPayable: 'Ce rendez-vous ne peut plus être payé.',
+    failureTitle: 'Échec du paiement',
+    failureMessage: 'Le paiement n’a pas abouti — aucun montant n’a été débité.',
+    retryAction: 'Réessayer',
+    viewAppointment: 'Voir le rendez-vous',
   },
 
   search: {
