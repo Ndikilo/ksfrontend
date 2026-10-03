@@ -317,3 +317,11 @@ symbolicate automatically: the `@sentry/react-native/expo` config plugin +
 [`metro.config.js`](metro.config.js) upload source maps during every
 `eas build` (release builds only). For `eas update` / `expo export` bundles,
 upload manually: `npx sentry-expo-upload-sourcemaps dist`.
+
+## Versioning & build numbers
+
+- `expo.version` in [`app.json`](app.json) is user-facing semver (1.0.0).
+- `expo.ios.buildNumber` — string, bumped every TestFlight/App Store build.
+- `expo.android.versionCode` — integer, monotonic: `major*10000 + minor*100 +
+  patch` (1.2.3 → 10203). Never reuse or go backwards per store rules.
+- Release tags cut from `main`; both fields bump in the same PR.

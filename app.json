@@ -8,9 +8,11 @@
     "scheme": "kanasante",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "cm.kanasante.app"
     },
     "android": {
+      "package": "cm.kanasante.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
