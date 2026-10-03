@@ -40,5 +40,20 @@ export const endpoints = {
     search: '/v1/practitioners',
     /** Public bookable profile of a verified practitioner. */
     byId: (id: string) => `/v1/practitioners/${id}`,
+    /** Expanded bookable slots (`from`/`to` ISO params) used by the booking flow. */
+    availability: (id: string) => `/v1/practitioners/${id}/availability`,
+    /** The signed-in practitioner's cancellation policy (GET / PUT). */
+    bookingPolicy: '/v1/practitioners/me/booking-policy',
+  },
+  dependents: {
+    /** Cursor-paginated list of the signed-in user's managed dependents. */
+    root: '/v1/dependents',
+  },
+  appointments: {
+    /** POST (book) / GET (role-aware list). */
+    root: '/v1/appointments',
+    byId: (id: string) => `/v1/appointments/${id}`,
+    reschedule: (id: string) => `/v1/appointments/${id}/reschedule`,
+    cancel: (id: string) => `/v1/appointments/${id}/cancel`,
   },
 } as const;

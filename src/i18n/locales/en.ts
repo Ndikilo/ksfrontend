@@ -167,8 +167,35 @@ export const en = {
     locations: 'Practice locations',
     qualifications: 'Qualifications',
     bookNow: 'Book appointment',
-    bookingNotice: 'Booking and payments are coming soon — you will be able to reserve this consultation right here.',
     notFound: 'This practitioner is not available.',
+  },
+
+  booking: {
+    title: 'Book an appointment',
+    signInRequired: 'Sign in to book an appointment.',
+    signInAction: 'Sign in',
+    pickDay: 'Pick a day',
+    pickTime: 'Pick a time',
+    slotsEmptyTitle: 'No open slots',
+    slotsEmptyMessage:
+      '{{name}} has no bookable times in the next two weeks. Please check back soon.',
+    confirmTitle: 'Confirm your booking',
+    whoLabel: 'Who is this appointment for?',
+    forMyself: 'Myself',
+    offeringLabel: 'Consultation',
+    whenLabel: 'When',
+    withLabel: 'With',
+    policyNotice:
+      'You can cancel before the practitioner’s notice window without a fee. The exact policy is shown once you book.',
+    next: 'Next',
+    confirm: 'Confirm booking',
+    backToSlots: 'Back to times',
+    successTitle: 'Appointment booked',
+    successWhen: '{{when}}',
+    successPolicyFree: 'You can cancel free of charge up to {{hours}} h before the start.',
+    successPolicyFee:
+      'You can cancel free of charge up to {{hours}} h before the start; later cancellations may be charged {{fee}} XAF.',
+    done: 'Done',
   },
 
   home: {

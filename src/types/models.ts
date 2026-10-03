@@ -240,3 +240,61 @@ export type PractitionerDetail = {
   locations: PractitionerLocation[];
   offerings: PractitionerOffering[];
 };
+
+// --- Booking (P4) -----------------------------------------------------------
+
+/** Appointment lifecycle: pending → confirmed → cancelled | completed | no_show. */
+export type AppointmentStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+
+/** A bookable time window expanded from a practitioner's availability rules. */
+export type PublicSlot = {
+  /** Opaque slot identity from the availability expansion (stable per window). */
+  key: string;
+  startsAt: string;
+  endsAt: string;
+  consultationTypes: ConsultationType[];
+  locationId: ID | null;
+  source: 'rule' | 'exception' | 'explicit';
+};
+
+/** A care recipient the signed-in user (or a linked account) cares for. */
+export type Dependent = {
+  id: ID;
+  surname: string;
+  givenNames: string;
+  /** ISO date (YYYY-MM-DD). */
+  dateOfBirth: string;
+  sex: Sex;
+  relationship: 'child' | 'parent' | 'spouse' | 'sibling' | 'other';
+  phone: string | null;
+  location: string | null;
+};
+
+/**
+ * A booking, with the commercial terms + cancellation policy SNAPSHOT-ED by
+ * the backend at booking time (later policy edits never change it).
+ */
+export type Appointment = {
+  id: ID;
+  patientUserId: string;
+  /** null = booked for the account holder themself. */
+  dependentId: ID | null;
+  practitionerProfileId: ID;
+  slotId: ID;
+  consultationOfferingId: ID;
+  status: AppointmentStatus;
+  consultationType: ConsultationType;
+  startsAt: string;
+  endsAt: string;
+  priceXaf: number;
+  /** Cancellation notice window (hours) in force at booking time. */
+  cancellationNoticeHours: number;
+  /** Late-cancellation fee (XAF) in force at booking time. */
+  cancellationFeeXaf: number;
+  lateCancellation: boolean;
+  cancelledAt: string | null;
+  cancelledByUserId: string | null;
+};
+
+/** The practitioner-configurable cancellation policy applied to NEW bookings. */
+export type BookingPolicy = { noticeHours: number; feeXaf: number };

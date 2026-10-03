@@ -167,8 +167,35 @@ export const fr: Translations = {
     locations: 'Lieux de pratique',
     qualifications: 'Diplômes et qualifications',
     bookNow: 'Prendre rendez-vous',
-    bookingNotice: 'La réservation et les paiements arrivent bientôt — vous pourrez réserver cette consultation ici même.',
     notFound: 'Ce praticien n’est pas disponible.',
+  },
+
+  booking: {
+    title: 'Prendre un rendez-vous',
+    signInRequired: 'Connectez-vous pour réserver un rendez-vous.',
+    signInAction: 'Se connecter',
+    pickDay: 'Choisissez un jour',
+    pickTime: 'Choisissez un horaire',
+    slotsEmptyTitle: 'Aucun créneau libre',
+    slotsEmptyMessage:
+      '{{name}} n’a pas de créneau réservable dans les deux prochaines semaines. Revenez bientôt.',
+    confirmTitle: 'Confirmez votre réservation',
+    whoLabel: 'Pour qui est ce rendez-vous ?',
+    forMyself: 'Pour moi',
+    offeringLabel: 'Consultation',
+    whenLabel: 'Quand',
+    withLabel: 'Avec',
+    policyNotice:
+      'Vous pouvez annuler sans frais avant le délai de préavis du praticien. La règle exacte s’affiche dès la réservation confirmée.',
+    next: 'Suivant',
+    confirm: 'Confirmer le rendez-vous',
+    backToSlots: 'Retour aux horaires',
+    successTitle: 'Rendez-vous réservé',
+    successWhen: '{{when}}',
+    successPolicyFree: 'Annulation sans frais jusqu’à {{hours}} h avant le début.',
+    successPolicyFee:
+      'Annulation sans frais jusqu’à {{hours}} h avant le début ; au-delà, des frais de {{fee}} XAF peuvent s’appliquer.',
+    done: 'Terminé',
   },
 
   home: {

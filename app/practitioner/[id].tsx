@@ -1,11 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { searchService } from '@/api';
-import { Banner } from '@/components/feedback';
 import { Avatar, Badge, Button, Card, Divider, Screen, Spinner, Text } from '@/components/ui';
 import { professionIcon } from '@/constants';
 import { useAsync } from '@/hooks';
@@ -14,14 +12,13 @@ import type { ConsultationType } from '@/types';
 import { formatDate } from '@/utils';
 
 /**
- * Public profile of a verified practitioner. Booking is intentionally a
- * notice: the appointments/payments module is not built yet (team decision).
+ * Public profile of a verified practitioner. "Book appointment" opens the
+ * booking flow (availability → confirm → success, P4.T1).
  */
 export default function PractitionerDetailScreen() {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [showBookingNotice, setShowBookingNotice] = useState(false);
 
   const { data, error, isLoading, refetch } = useAsync(
     () => searchService.practitioner(id),
@@ -102,10 +99,11 @@ export default function PractitionerDetailScreen() {
         </View>
       </Card>
 
-      {showBookingNotice ? (
-        <Banner tone="info" message={t('practitioner.bookingNotice')} />
-      ) : null}
-      <Button title={t('practitioner.bookNow')} fullWidth onPress={() => setShowBookingNotice(true)} />
+      <Button
+        title={t('practitioner.bookNow')}
+        fullWidth
+        onPress={() => router.push(`/booking/${id}`)}
+      />
 
       {/* About */}
       <Card>
