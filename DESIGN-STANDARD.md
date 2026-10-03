@@ -24,8 +24,12 @@ is the committed twin — keep them identical.
   in dark mode (dark danger/info on their tints also fail at 3.9/3.2:1).
 - Spacing: the 4pt scale `spacing.none…huge` (`xxs`=2, `xs`=4, `sm`=8, `md`=12,
   `lg`=16, `xl`=24, `xxl`=32, `xxxl`=48, `huge`=64) and `layout.screenPadding`
-  (24) / `layout.hitSlop` / `layout.maxContentWidth` (640) — no magic numbers.
-  Touch targets ≥ 48×48 (use `hitSlop` for icon-only controls).
+  (24) / `layout.hitSlop` / `layout.minTouchTarget` (48) /
+  `layout.maxContentWidth` (640) — no magic numbers. Inline styles always
+  reference the tokens (`theme.spacing.*`); static `StyleSheet.create` blocks
+  may use ON-SCALE numeric literals (they cannot read the hook) — any
+  off-scale value is a magic number. Touch targets ≥ 48×48 (use `hitSlop` for
+  icon-only controls).
 - Radius: `radius.control` (5) for ALL interactive controls (Button, Input,
   Select, DateField — already shared), `sm/md/lg` for cards, `xl` (20) for
   sheet top corners (see `Select`), `full` for pills and avatars. One radius
@@ -57,7 +61,11 @@ is the committed twin — keep them identical.
 - Every async surface has all three states from the kit: loading (`Spinner` or
   skeleton matching the final layout shape — no generic pulse box), error
   (`ErrorState` with retry), empty (`EmptyState` that explains why + offers the
-  next action: "No appointments yet — find a practitioner").
+  next action: "No appointments yet — find a practitioner"). A refetch of
+  already-visible data (focus refresh, post-mutation refresh, retry) keeps the
+  content mounted (stale-while-revalidate); the full-screen `Spinner` branch is
+  first load only — gate it on `isLoading && data === null`, never a bare
+  `isLoading`.
 - Every interactive element shows default / pressed (≤100ms feedback) /
   disabled / loading. No dead taps; no dead ends (always a way forward or back).
 - Destructive actions confirm. After success the user lands somewhere useful —
