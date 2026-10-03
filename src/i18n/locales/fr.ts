@@ -83,9 +83,13 @@ export const fr: Translations = {
     resendIn: 'Renvoyer le code dans {{time}}',
     notReceived: "Vous n'avez pas reçu le code ?",
     resend: 'Renvoyer le code',
-    enterCode: 'Saisissez le code à 6 chiffres',
-    a11yHint: 'Tapez les 6 chiffres du code qui vous a été envoyé. Vous pouvez aussi coller le code entier.',
-    digitsEntered: '{{count}} chiffres saisis sur {{total}}',
+    enterCode: 'Saisissez le code à {{length}} chiffres',
+    a11yHint:
+      'Tapez les {{length}} chiffres du code qui vous a été envoyé. Vous pouvez aussi coller le code entier.',
+    // Variantes de pluriel requises dans les DEUX locales : i18next résout
+    // count via Intl.PluralRules et ignore la clé de base sans _one/_other.
+    digitsEntered_one: '{{count}} chiffre saisi sur {{total}}',
+    digitsEntered_other: '{{count}} chiffres saisis sur {{total}}',
   },
 
   login: {
@@ -225,11 +229,11 @@ export const fr: Translations = {
     network: 'Erreur réseau. Vérifiez votre connexion et réessayez.',
     timeout: 'La demande a expiré. Veuillez réessayer.',
     generic: 'Une erreur est survenue. Veuillez réessayer.',
-    badRequest: "La demande n'est pas valide.",
+    badRequest: "Nous n'avons pas pu traiter cette demande. Veuillez vérifier vos informations et réessayer.",
     unauthorized: 'Votre session a expiré. Veuillez vous reconnecter.',
     forbidden: "Vous n'avez pas la permission de faire cela.",
     notFound: "Nous n'avons pas trouvé ce que vous cherchez.",
-    conflict: "Cela entre en conflit avec l'état actuel. Veuillez actualiser et réessayer.",
+    conflict: "Cela ne correspond plus à la dernière version. Actualisez l'écran et réessayez.",
     tooLarge: 'Ce fichier ou cette demande est trop volumineux.',
     validation: 'Veuillez vérifier les champs indiqués et réessayer.',
     rateLimited: 'Trop de demandes. Veuillez ralentir et réessayer.',

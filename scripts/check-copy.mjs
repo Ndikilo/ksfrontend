@@ -9,10 +9,10 @@
  *
  * Patterns flagged:
  *   1. Copy-bearing string props/keys: title=|label=|placeholder=|message=|
- *      subtitle=|hint=|accessibilityLabel= with a literal containing letters
- *      (both JSX `prop="x"` and object `{ prop: 'x' }` shapes). Comment lines
- *      are ignored; single-token placeholder values (example data such as
- *      "johndoe@gmail.com") are exempt.
+ *      subtitle=|hint=|text=|actionLabel=|accessibilityLabel= with a literal
+ *      containing letters (both JSX `prop="x"` and object `{ prop: 'x' }`
+ *      shapes). Comment lines are ignored; single-token placeholder values
+ *      (example data such as "johndoe@gmail.com") are exempt.
  *   2. Raw JSX text children containing a word (≥3 letters) — .tsx only.
  *
  * File allowlist (justified — no translatable copy):
@@ -25,9 +25,10 @@
  *   - src/i18n contents        the locale tables themselves + setup
  *   - test directories/files   test fixtures/assertions
  *   - src/api/services/auth.mock.ts   dev-only mock (forced off in release)
- *   - src/utils/validators.ts         pure helpers; English defaults are
- *      fallbacks only — every call site passes localized copy (audited) and
- *      the P2.T4 tests pin the pure behavior without an i18n dependency.
+ *   - src/utils/validators.ts         pure helpers; see the file header — the
+ *      boolean predicates take localized copy from their call sites, and the
+ *      unconsumed `rules` factory's English defaults exist only for the pure
+ *      unit tests (any real call site must pass localized messages).
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -36,7 +37,7 @@ const ROOTS = ['app', 'src'];
 const EXCLUDE_DIRS = new Set(['node_modules', '.expo', '.git', 'i18n', '__tests__']);
 const EXCLUDE_FILES = new Set([
   'auth.mock.ts', // dev-only mock service (release builds force mockAuth off)
-  'validators.ts', // pure helpers — see header note
+  'validators.ts', // pure helpers — see header note + the allowlist rationale above
 ]);
 const ALLOWED_FILES = new Set([
   'src/api/httpError.ts',
@@ -44,7 +45,7 @@ const ALLOWED_FILES = new Set([
 ]);
 
 const PROP_RE =
-  /\b(?:title|label|placeholder|message|subtitle|hint|accessibilityLabel)\s*[:=]\s*["']([^"'\n]*)["']/g;
+  /\b(?:title|label|placeholder|message|subtitle|hint|text|actionLabel|accessibilityLabel)\s*[:=]\s*["']([^"'\n]*)["']/g;
 // Natural-language children only (≥2 words) — single tokens also match type
 // annotations like `Promise<void>` in .tsx files.
 const CHILD_RE = />([^<>{}\n]*[A-Za-z]{3,}[^<>{}\n]*)</g;

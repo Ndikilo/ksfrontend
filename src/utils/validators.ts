@@ -2,6 +2,15 @@
  * Pure, dependency-free validation helpers. Each returns a human-readable error
  * string on failure or `null` when valid — composable in forms without a
  * validation library.
+ *
+ * Copy policy (why this file is exempt from the copy gate): the boolean
+ * predicates (`isEmail`/`isNonEmpty`/`isPhone`) are the production surface —
+ * every screen call site passes its own localized copy via `t()`
+ * (register/login). The `rules` factory and `STRONG_PASSWORD_MESSAGE` are a
+ * form-helper convenience API with NO production consumers yet; their English
+ * defaults exist only so the P2.T4 tests can pin the pure behavior without an
+ * i18n dependency. Any future call site must pass localized messages
+ * (every `rules.*` factory takes a `message` argument for exactly that).
  */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

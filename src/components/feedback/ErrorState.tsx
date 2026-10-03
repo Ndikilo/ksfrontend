@@ -19,7 +19,8 @@ export function ErrorState({ error, onRetry }: ErrorStateProps) {
 
   return (
     <View style={[styles.container, { padding: theme.spacing.xl }]}>
-      <Text variant="subheading" color="danger" align="center">
+      {/* Copy-safe danger token: `danger` on white is only 3.9:1 in light mode. */}
+      <Text variant="subheading" color="dangerText" align="center">
         {t('errors.heading')}
       </Text>
       <Text variant="body" color="textMuted" align="center">

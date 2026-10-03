@@ -83,9 +83,13 @@ export const en = {
     resendIn: 'Resend code in {{time}}',
     notReceived: "Haven't received code?",
     resend: 'Resend code',
-    enterCode: 'Enter the 6-digit code',
-    a11yHint: 'Type the 6 digits of the code we sent you. You can also paste the whole code.',
-    digitsEntered: '{{count}} of {{total}} digits entered',
+    enterCode: 'Enter the {{length}}-digit code',
+    a11yHint:
+      'Type the {{length}} digits of the code we sent you. You can also paste the whole code.',
+    // Plural variants required in BOTH locales: i18next resolves count via
+    // Intl.PluralRules and skips a base key without _one/_other (T9 review).
+    digitsEntered_one: '{{count}} of {{total}} digits entered',
+    digitsEntered_other: '{{count}} of {{total}} digits entered',
   },
 
   login: {
@@ -228,11 +232,11 @@ export const en = {
     network: 'Network error. Please check your connection and try again.',
     timeout: 'The request timed out. Please try again.',
     generic: 'Something went wrong. Please try again.',
-    badRequest: 'The request was invalid.',
+    badRequest: 'We could not process that request. Please check your details and try again.',
     unauthorized: 'Your session has expired. Please sign in again.',
     forbidden: 'You do not have permission to do that.',
     notFound: 'We could not find what you were looking for.',
-    conflict: 'That conflicts with the current state. Please refresh and try again.',
+    conflict: 'That no longer matches the latest version. Refresh the screen and try again.',
     tooLarge: 'That file or request is too large.',
     validation: 'Please check the highlighted fields and try again.',
     rateLimited: 'Too many requests. Please slow down and try again.',

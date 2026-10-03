@@ -53,7 +53,7 @@ export function OtpInput({
     // not on an unlabeled "button" wrapper.
     <Pressable accessible={false} style={styles.row} onPress={() => inputRef.current?.focus()}>
       <View
-        style={styles.cells}
+        style={[styles.cells, { gap: theme.spacing.sm }]}
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
       >
@@ -61,7 +61,7 @@ export function OtpInput({
           const char = value[i];
           const active = focused && i === Math.min(value.length, length - 1);
           return (
-            <View key={i} style={styles.cell}>
+            <View key={i} style={[styles.cell, { gap: theme.spacing.sm }]}>
               <Text variant="title">{char ?? ''}</Text>
               <View
                 style={[
@@ -84,8 +84,8 @@ export function OtpInput({
         textContentType="oneTimeCode"
         autoComplete="one-time-code"
         caretHidden
-        accessibilityLabel={t('otp.enterCode')}
-        accessibilityHint={t('otp.a11yHint')}
+        accessibilityLabel={t('otp.enterCode', { length })}
+        accessibilityHint={t('otp.a11yHint', { length })}
         accessibilityLiveRegion="polite"
         style={styles.hiddenInput}
         onFocus={() => setFocused(true)}
@@ -101,9 +101,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flex: 1,
     justifyContent: 'space-between',
-    gap: 8,
+    // gap comes from the theme (spacing.sm) at render time.
   },
-  cell: { flex: 1, alignItems: 'center', gap: 8 },
+  cell: { flex: 1, alignItems: 'center' },
   underline: { height: 3, width: 24, borderRadius: 2 },
   hiddenInput: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0 },
 });
