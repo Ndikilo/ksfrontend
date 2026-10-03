@@ -15,6 +15,7 @@ export const en = {
     alreadyHaveAccount: 'Already have an account?',
     goBack: 'Go back',
     required: 'Required',
+    retry: 'Try again',
   },
 
   validation: {
@@ -188,6 +189,7 @@ export const en = {
 
   notFound: {
     title: "This screen doesn't exist.",
+    headerTitle: 'Not found',
     goHome: 'Go to home',
   },
 
@@ -196,10 +198,31 @@ export const en = {
     error: 'No internet connection. Check your network and try again.',
   },
 
+  // Shared component copy (ui kit + feedback).
+  input: {
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
+  },
+
+  dateField: {
+    selectDate: 'Select date',
+    done: 'Done',
+    placeholder: 'dd/mm/yyyy',
+  },
+
+  select: {
+    placeholder: 'Select…',
+  },
+
+  errorBoundary: {
+    message: 'An unexpected error occurred. Please restart the screen.',
+  },
+
   // Error layer copy (api/errorMessages.ts). Status keys mirror the http
   // client's English fallbacks; codes cover better-auth (English-only
   // server-side) and client-side flow errors.
   errors: {
+    heading: 'Something went wrong',
     network: 'Network error. Please check your connection and try again.',
     timeout: 'The request timed out. Please try again.',
     generic: 'Something went wrong. Please try again.',

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { isApiError } from '@/api';
+import i18n from '@/i18n';
 import type { ApiError } from '@/types';
 
 type AsyncState<T> = {
@@ -49,7 +50,7 @@ export function useAsync<T>(
     } catch (err) {
       const error: ApiError = isApiError(err)
         ? err
-        : { status: 0, message: 'Something went wrong.' };
+        : { status: 0, message: i18n.t('errors.generic') };
       if (isMounted.current) setState((prev) => ({ ...prev, error, isLoading: false }));
     }
     // asyncFn is intentionally excluded; callers control re-runs via `deps`.

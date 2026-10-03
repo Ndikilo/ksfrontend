@@ -1,5 +1,7 @@
 import { Component, type ReactNode } from 'react';
 
+import i18n from '@/i18n';
+
 import { reportError } from '@/utils/sentry';
 
 import { ErrorState } from './ErrorState';
@@ -30,10 +32,9 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         this.props.fallback ?? (
-          <ErrorState
-            error="An unexpected error occurred. Please restart the screen."
-            onRetry={this.reset}
-          />
+          // Class component — no useTranslation hook; resolved at crash-render
+          // time from the active locale.
+          <ErrorState error={i18n.t('errorBoundary.message')} onRetry={this.reset} />
         )
       );
     }

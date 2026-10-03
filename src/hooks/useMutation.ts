@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { isApiError } from '@/api';
+import i18n from '@/i18n';
 import type { ApiError } from '@/types';
 
 type MutationState<T> = {
@@ -59,7 +60,7 @@ export function useMutation<T, V = void>(
       } catch (err) {
         const error: ApiError = isApiError(err)
           ? err
-          : { status: 0, message: 'Something went wrong.' };
+          : { status: 0, message: i18n.t('errors.generic') };
         if (isMounted.current) setState({ data: null, error, isLoading: false });
         options.onError?.(error, variables);
         return null;

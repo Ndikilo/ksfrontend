@@ -45,7 +45,7 @@ export default function PractitionerDetailScreen() {
         <Text variant="body" color="danger">
           {error?.message ?? t('practitioner.notFound')}
         </Text>
-        <Button title="Try again" variant="outline" onPress={refetch} />
+        <Button title={t('common.retry')} variant="outline" onPress={refetch} />
       </Screen>
     );
   }

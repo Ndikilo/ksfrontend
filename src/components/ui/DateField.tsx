@@ -3,6 +3,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { useTheme } from '@/theme';
@@ -35,13 +36,14 @@ export function DateField({
   onChange,
   label,
   required,
-  placeholder = 'dd/mm/yyyy',
+  placeholder,
   error,
   minimumDate,
   maximumDate,
   containerStyle,
 }: DateFieldProps) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const [show, setShow] = useState(false);
   const fallback = value ?? new Date(2000, 0, 1);
 
@@ -69,7 +71,7 @@ export function DateField({
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={label ?? 'Select date'}
+        accessibilityLabel={label ?? t('dateField.selectDate')}
         onPress={() => setShow(true)}
         style={[
           styles.trigger,
@@ -82,7 +84,7 @@ export function DateField({
         ]}
       >
         <Text variant="body" color={value ? 'text' : 'textMuted'}>
-          {value ? formatDDMMYYYY(value) : placeholder}
+          {value ? formatDDMMYYYY(value) : (placeholder ?? t('dateField.placeholder'))}
         </Text>
         <Ionicons name="calendar-outline" size={20} color={theme.colors.textMuted} />
       </Pressable>
@@ -104,7 +106,7 @@ export function DateField({
               style={[styles.sheet, { backgroundColor: theme.colors.surface }]}
             >
               <View style={styles.sheetHeader}>
-                <Link label="Done" onPress={() => setShow(false)} underline={false} />
+                <Link label={t('dateField.done')} onPress={() => setShow(false)} underline={false} />
               </View>
               {picker}
             </Pressable>

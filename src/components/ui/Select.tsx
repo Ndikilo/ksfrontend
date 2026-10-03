@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   FlatList,
   Modal,
@@ -60,13 +61,14 @@ export function Select<T>({
   onChange,
   label,
   required,
-  placeholder = 'Select…',
+  placeholder,
   title,
   error,
   disabled = false,
   containerStyle,
 }: SelectProps<T>) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
 
@@ -100,7 +102,7 @@ export function Select<T>({
         ]}
       >
         <Text variant="body" color={selected ? 'text' : 'textMuted'} numberOfLines={1} style={styles.value}>
-          {selected?.label ?? placeholder}
+          {selected?.label ?? (placeholder ?? t('select.placeholder'))}
         </Text>
         <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
       </Pressable>

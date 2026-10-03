@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import { useTranslation } from 'react-i18next';
 
 import { OfflineBanner } from '@/components/feedback';
 import { useUpdateCheck } from '@/hooks';
@@ -34,6 +35,7 @@ export default function RootLayout() {
 
 function RootNavigator() {
   const theme = useTheme();
+  const { t } = useTranslation();
   return (
     <>
       <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
@@ -48,7 +50,10 @@ function RootNavigator() {
         <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(auth)" />
-        <Stack.Screen name="+not-found" options={{ headerShown: true, title: 'Not found' }} />
+        <Stack.Screen
+          name="+not-found"
+          options={{ headerShown: true, title: t('notFound.headerTitle') }}
+        />
       </Stack>
     </>
   );

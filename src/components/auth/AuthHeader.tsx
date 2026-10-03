@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { IconButton, Text } from '@/components/ui';
@@ -15,13 +16,14 @@ export type AuthHeaderProps = {
 /** Back button + title + subtitle block shared by every auth screen. */
 export function AuthHeader({ title, subtitle, onBack, showBack = true }: AuthHeaderProps) {
   const theme = useTheme();
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
       {showBack ? (
         <IconButton
           name="arrow-back"
           variant="dark"
-          accessibilityLabel="Go back"
+          accessibilityLabel={t('common.goBack')}
           onPress={onBack ?? (() => (router.canGoBack() ? router.back() : router.replace('/')))}
           style={{ marginBottom: theme.spacing.lg }}
         />

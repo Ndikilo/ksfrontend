@@ -97,7 +97,9 @@ export default function SearchScreen() {
       } catch (err) {
         if (!cancelled) {
           setError(
-            isApiError(err) ? err : { status: 0, message: 'Something went wrong. Please try again.' },
+            isApiError(err)
+              ? err
+              : { status: 0, message: t('errors.generic'), source: 'client' },
           );
         }
       } finally {

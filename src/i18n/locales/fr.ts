@@ -13,6 +13,7 @@ export const fr: Translations = {
     alreadyHaveAccount: 'Vous avez déjà un compte ?',
     goBack: 'Retour',
     required: 'Requis',
+    retry: 'Réessayer',
   },
 
   validation: {
@@ -189,6 +190,7 @@ export const fr: Translations = {
 
   notFound: {
     title: "Cet écran n'existe pas.",
+    headerTitle: 'Page introuvable',
     goHome: "Aller à l'accueil",
   },
 
@@ -197,7 +199,27 @@ export const fr: Translations = {
     error: 'Pas de connexion Internet. Vérifiez votre réseau et réessayez.',
   },
 
+  input: {
+    showPassword: 'Afficher le mot de passe',
+    hidePassword: 'Masquer le mot de passe',
+  },
+
+  dateField: {
+    selectDate: 'Choisir une date',
+    done: 'Terminé',
+    placeholder: 'jj/mm/aaaa',
+  },
+
+  select: {
+    placeholder: 'Sélectionner…',
+  },
+
+  errorBoundary: {
+    message: 'Une erreur inattendue est survenue. Veuillez rouvrir cet écran.',
+  },
+
   errors: {
+    heading: 'Une erreur est survenue',
     network: 'Erreur réseau. Vérifiez votre connexion et réessayez.',
     timeout: 'La demande a expiré. Veuillez réessayer.',
     generic: 'Une erreur est survenue. Veuillez réessayer.',

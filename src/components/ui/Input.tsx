@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { forwardRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Pressable,
   StyleSheet,
@@ -50,6 +51,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
   ref,
 ) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(true);
 
@@ -72,7 +74,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
       return (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={hidden ? 'Show password' : 'Hide password'}
+          accessibilityLabel={hidden ? t('input.showPassword') : t('input.hidePassword')}
           hitSlop={theme.layout.hitSlop}
           onPress={() => setHidden((h) => !h)}
         >

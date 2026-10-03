@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
@@ -13,18 +14,24 @@ type ErrorStateProps = {
 /** Consistent error UI with an optional retry — pair with `useAsync`. */
 export function ErrorState({ error, onRetry }: ErrorStateProps) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const message = typeof error === 'string' ? error : error.message;
 
   return (
     <View style={[styles.container, { padding: theme.spacing.xl }]}>
       <Text variant="subheading" color="danger" align="center">
-        Something went wrong
+        {t('errors.heading')}
       </Text>
       <Text variant="body" color="textMuted" align="center">
         {message}
       </Text>
       {onRetry ? (
-        <Button title="Try again" variant="outline" onPress={onRetry} style={styles.action} />
+        <Button
+          title={t('common.retry')}
+          variant="outline"
+          onPress={onRetry}
+          style={styles.action}
+        />
       ) : null}
     </View>
   );
