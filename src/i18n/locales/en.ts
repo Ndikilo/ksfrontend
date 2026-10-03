@@ -195,6 +195,32 @@ export const en = {
     banner: 'You are offline — booking and payments need a connection.',
     error: 'No internet connection. Check your network and try again.',
   },
+
+  // Error layer copy (api/errorMessages.ts). Status keys mirror the http
+  // client's English fallbacks; codes cover better-auth (English-only
+  // server-side) and client-side flow errors.
+  errors: {
+    network: 'Network error. Please check your connection and try again.',
+    timeout: 'The request timed out. Please try again.',
+    generic: 'Something went wrong. Please try again.',
+    badRequest: 'The request was invalid.',
+    unauthorized: 'Your session has expired. Please sign in again.',
+    forbidden: 'You do not have permission to do that.',
+    notFound: 'We could not find what you were looking for.',
+    conflict: 'That conflicts with the current state. Please refresh and try again.',
+    tooLarge: 'That file or request is too large.',
+    validation: 'Please check the highlighted fields and try again.',
+    rateLimited: 'Too many requests. Please slow down and try again.',
+    server: 'Our servers are having trouble. Please try again shortly.',
+    codes: {
+      EMAIL_NOT_VERIFIED: 'Verify your email first — we sent you a code.',
+      INVALID_EMAIL_OR_PASSWORD: 'Incorrect email or password.',
+      USER_ALREADY_EXISTS: 'An account with this email already exists. Try signing in instead.',
+      INVALID_OTP: 'That code is not correct. Please check the code we sent you.',
+      OTP_EXPIRED: 'That code has expired. Please send yourself a new one.',
+      SESSION_REQUIRED: 'Email verified. Please sign in with your password to continue.',
+    },
+  },
 } as const;
 
 /** Same nested shape as `en`, but every leaf is a plain `string` — so the

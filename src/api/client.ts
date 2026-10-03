@@ -8,6 +8,7 @@ import { env } from '@/config/env';
 import i18n from '@/i18n';
 import { logger } from '@/utils/logger';
 
+import { apiErrorMessage } from './errorMessages';
 import { normalizeError } from './httpError';
 import { isOnline } from './netState';
 
@@ -49,6 +50,9 @@ instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (authToken) {
     config.headers.set('Authorization', `Bearer ${authToken}`);
   }
+  // The backend localizes /v1 error copy from this header (better-auth does
+  // not — those errors are mapped client-side in api/errorMessages.ts).
+  config.headers.set('Accept-Language', i18n.language);
   if (env.isDev) {
     logger.debug('http', `${config.method?.toUpperCase()} ${config.url}`);
   }
@@ -60,11 +64,14 @@ instance.interceptors.response.use(
   (error) => {
     const normalized = normalizeError(error);
     // Offline at request time: the failure is the connection, not the app —
-    // say so with localized copy instead of the generic network message.
+    // tag it so the message resolver uses the offline copy.
     if (normalized.status === 0 && error?.response === undefined && !isOnline()) {
-      normalized.message = i18n.t('offline.error');
       normalized.code = 'OFFLINE';
     }
+    // ONE localized message for every failure path: the server's own copy for
+    // /v1 envelopes (it answers in the Accept-Language we send), client-side
+    // tables for transport failures and better-auth (English-only server-side).
+    normalized.message = apiErrorMessage(normalized, i18n.t.bind(i18n));
     // Central place to react to auth expiry regardless of which call triggered it.
     if (normalized.status === 401 && onUnauthorized) {
       onUnauthorized();

@@ -17,7 +17,13 @@ describe('normalizeError — the httpError normalization table', () => {
   const TABLE: {
     name: string;
     error: unknown;
-    expected: { status: number; message: string; code?: string; fieldErrors?: Record<string, string> };
+    expected: {
+      status: number;
+      message: string;
+      code?: string;
+      fieldErrors?: Record<string, string>;
+      source?: 'envelope' | 'auth' | 'transport' | 'client';
+    };
   }[] = [
     {
       name: 'feature envelope 422 with field details flattens fieldErrors',
@@ -42,6 +48,7 @@ describe('normalizeError — the httpError normalization table', () => {
         message: 'Invalid data',
         code: 'VALIDATION_ERROR',
         fieldErrors: { email: 'Enter a valid email address', phone: 'Enter a valid phone number' },
+        source: 'envelope',
       },
     },
     {
@@ -53,6 +60,7 @@ describe('normalizeError — the httpError normalization table', () => {
         status: 429,
         message: 'Too many requests. Please slow down and try again.',
         code: 'RATE_LIMITED',
+        source: 'envelope',
       },
     },
     {
@@ -62,6 +70,7 @@ describe('normalizeError — the httpError normalization table', () => {
         status: 404,
         message: 'We could not find what you were looking for.',
         code: undefined,
+        source: 'auth',
       },
     },
     {
@@ -69,12 +78,12 @@ describe('normalizeError — the httpError normalization table', () => {
       error: axiosError({
         response: { status: 403, data: { message: 'Email not verified', code: 'EMAIL_NOT_VERIFIED' } },
       }),
-      expected: { status: 403, message: 'Email not verified', code: 'EMAIL_NOT_VERIFIED' },
+      expected: { status: 403, message: 'Email not verified', code: 'EMAIL_NOT_VERIFIED', source: 'auth' },
     },
     {
       name: 'better-auth empty body falls back to the 400 default',
       error: axiosError({ response: { status: 400, data: {} } }),
-      expected: { status: 400, message: 'The request was invalid.', code: undefined },
+      expected: { status: 400, message: 'The request was invalid.', code: undefined, source: 'auth' },
     },
     {
       name: 'body null on a 503 gets the server-error default',
@@ -83,6 +92,7 @@ describe('normalizeError — the httpError normalization table', () => {
         status: 503,
         message: 'Our servers are having trouble. Please try again shortly.',
         code: undefined,
+        source: 'auth',
       },
     },
     {
@@ -92,6 +102,7 @@ describe('normalizeError — the httpError normalization table', () => {
         status: 401,
         message: 'Your session has expired. Please sign in again.',
         code: undefined,
+        source: 'auth',
       },
     },
     {
@@ -101,12 +112,13 @@ describe('normalizeError — the httpError normalization table', () => {
         status: 0,
         message: 'Network error. Please check your connection and try again.',
         code: 'ECONNABORTED',
+        source: 'transport',
       },
     },
     {
       name: 'non-axios thrown value → generic status 0 error',
       error: 'boom',
-      expected: { status: 0, message: 'Something went wrong. Please try again.', code: undefined },
+      expected: { status: 0, message: 'Something went wrong. Please try again.', code: undefined, source: 'transport' },
     },
   ];
 
@@ -201,11 +213,16 @@ describe('isApiError', () => {
 
 describe('apiError', () => {
   it('builds a client-side ApiError with optional code', () => {
-    expect(apiError(0, 'Password required')).toEqual({ status: 0, message: 'Password required' });
+    expect(apiError(0, 'Password required')).toEqual({
+      status: 0,
+      message: 'Password required',
+      source: 'client',
+    });
     expect(apiError(401, 'Sign in again', 'SESSION_REQUIRED')).toEqual({
       status: 401,
       message: 'Sign in again',
       code: 'SESSION_REQUIRED',
+      source: 'client',
     });
     expect(isApiError(apiError(400, 'x'))).toBe(true);
   });

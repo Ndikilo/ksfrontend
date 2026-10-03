@@ -7,6 +7,13 @@ import type { ApiError, FieldErrorDetail } from '@/types';
  * predictable `ApiError`. The rest of the app only ever deals with this shape,
  * so screens can render `error.message` safely and inspect `error.status`.
  *
+ * The `message` set here is the English fallback; `api/client.ts` localizes it
+ * per request via `api/errorMessages.ts`, which keys off `source`:
+ *   - `envelope`  — /v1 response, message already localized by the backend
+ *   - `auth`      — better-auth response, English-only → client maps it
+ *   - `transport` — no server response (offline/timeout) → client maps it
+ *   - `client`    — built by `apiError()` in services
+ *
  * The backend has two error formats, both handled here:
  *   - `/v1/*` envelope: `{ error: { code, message, details }, requestId }`
  *   - `/api/auth/*` (better-auth): `{ message, code }` at the top level
@@ -24,17 +31,19 @@ export function normalizeError(error: unknown): ApiError {
         status: 0,
         message: 'Network error. Please check your connection and try again.',
         code: error.code,
+        source: 'transport',
       };
     }
   }
 
-  return { status: 0, message: 'Something went wrong. Please try again.' };
+  return { status: 0, message: 'Something went wrong. Please try again.', source: 'transport' };
 }
 
 function fromResponseBody(status: number, data: unknown): ApiError {
   const body = (data ?? {}) as Record<string, unknown>;
 
   // Feature-API envelope: { error: { code, message, details }, requestId }.
+  // The server localizes `message` from our Accept-Language header.
   const envelope = body.error;
   if (typeof envelope === 'object' && envelope !== null) {
     const { code, message, details } = envelope as Record<string, unknown>;
@@ -44,14 +53,16 @@ function fromResponseBody(status: number, data: unknown): ApiError {
         (typeof message === 'string' && message) || defaultMessageForStatus(status),
       code: typeof code === 'string' ? code : undefined,
       fieldErrors: toFieldErrors(details),
+      source: 'envelope',
     };
   }
 
-  // better-auth: { message, code } at the top level.
+  // better-auth: { message, code } at the top level (English-only server-side).
   return {
     status,
     message: (typeof body.message === 'string' && body.message) || defaultMessageForStatus(status),
     code: typeof body.code === 'string' ? body.code : undefined,
+    source: 'auth',
   };
 }
 
@@ -99,9 +110,12 @@ export const isApiError = (value: unknown): value is ApiError =>
   'status' in value &&
   'message' in value;
 
-/** Build an `ApiError` for client-side flow failures (no network involved). */
+/** Build an `ApiError` for client-side flow failures (no network involved).
+ *  Pass an already-localized `message` or a stable `code` from
+ *  `errors.codes.*` so the error layer can localize it. */
 export const apiError = (status: number, message: string, code?: string): ApiError => ({
   status,
   message,
   code,
+  source: 'client',
 });

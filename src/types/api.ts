@@ -10,6 +10,10 @@ export type ApiError = {
   code?: string;
   /** Field-level validation errors keyed by field name. */
   fieldErrors?: Record<string, string>;
+  /** Which path produced the error — decides whether `message` is already
+   *  user-localized (`envelope`, `client`) or English copy the client must
+   *  map to the locale (`auth`, `transport`). See `api/errorMessages.ts`. */
+  source?: 'envelope' | 'auth' | 'transport' | 'client';
 };
 
 /** Backend validation detail (422 VALIDATION_FAILED): one entry per bad field. */

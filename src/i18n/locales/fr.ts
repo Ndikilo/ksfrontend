@@ -196,6 +196,30 @@ export const fr: Translations = {
     banner: 'Vous êtes hors ligne — la réservation et les paiements nécessitent une connexion.',
     error: 'Pas de connexion Internet. Vérifiez votre réseau et réessayez.',
   },
+
+  errors: {
+    network: 'Erreur réseau. Vérifiez votre connexion et réessayez.',
+    timeout: 'La demande a expiré. Veuillez réessayer.',
+    generic: 'Une erreur est survenue. Veuillez réessayer.',
+    badRequest: "La demande n'est pas valide.",
+    unauthorized: 'Votre session a expiré. Veuillez vous reconnecter.',
+    forbidden: "Vous n'avez pas la permission de faire cela.",
+    notFound: "Nous n'avons pas trouvé ce que vous cherchez.",
+    conflict: "Cela entre en conflit avec l'état actuel. Veuillez actualiser et réessayer.",
+    tooLarge: 'Ce fichier ou cette demande est trop volumineux.',
+    validation: 'Veuillez vérifier les champs indiqués et réessayer.',
+    rateLimited: 'Trop de demandes. Veuillez ralentir et réessayer.',
+    server: 'Nos serveurs rencontrent un problème. Veuillez réessayer dans un instant.',
+    codes: {
+      EMAIL_NOT_VERIFIED: "Vérifiez d'abord votre adresse e-mail — nous vous avons envoyé un code.",
+      INVALID_EMAIL_OR_PASSWORD: 'E-mail ou mot de passe incorrect.',
+      USER_ALREADY_EXISTS: 'Un compte existe déjà avec cet e-mail. Essayez de vous connecter.',
+      INVALID_OTP: "Ce code n'est pas correct. Vérifiez le code que nous vous avons envoyé.",
+      OTP_EXPIRED: 'Ce code a expiré. Veuillez en demander un nouveau.',
+      SESSION_REQUIRED:
+        'E-mail vérifié. Veuillez vous connecter avec votre mot de passe pour continuer.',
+    },
+  },
 };
 
 export default fr;
