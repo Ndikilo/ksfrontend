@@ -68,6 +68,7 @@ function loadEnv(options: {
   publicBaseUrl?: string;
   android?: boolean;
 }): Env {
+  jest.resetModules();
   (globalThis as { __DEV__?: boolean }).__DEV__ = options.dev;
   mockPlatformOS = options.android ? 'android' : 'ios';
   if (options.extra) mockExtra = options.extra;
@@ -88,14 +89,14 @@ describe('env config guard — mockAuth must never ship in a release build', () 
   });
 
   it('FORCES mockAuth off and logs a loud error in a release build', () => {
-    const env = loadEnv({ dev: false, extra: { mockAuth: true } });
+    const env = loadEnv({ dev: false, extra: { mockAuth: true, apiBaseUrl: 'https://prod.example' } });
     expect(env.mockAuth).toBe(false);
     expect(console.error).toHaveBeenCalledTimes(1);
     expect(console.error).toHaveBeenCalledWith(expect.stringContaining('mockAuth'));
   });
 
   it('stays off with no error when mockAuth is unset in a release build', () => {
-    const env = loadEnv({ dev: false });
+    const env = loadEnv({ dev: false, extra: { apiBaseUrl: 'https://prod.example' } });
     expect(env.mockAuth).toBe(false);
     expect(console.error).not.toHaveBeenCalled();
   });
@@ -142,5 +143,42 @@ describe('env config — apiBaseUrl resolution order', () => {
     const env = loadEnv({ dev: true, extra: {} });
     expect(env.apiBaseUrl).toBe('');
     expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('apiBaseUrl'));
+  });
+});
+
+describe('env config — apiBaseUrl release validation (P2.T6)', () => {
+  it('logs a LOUD error when apiBaseUrl is missing in a release build', () => {
+    const env = loadEnv({ dev: false, extra: {} });
+    expect(env.apiBaseUrl).toBe('');
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Missing config value'));
+  });
+
+  it('logs a LOUD error for a malformed URL in a release build', () => {
+    loadEnv({ dev: false, extra: { apiBaseUrl: 'ksbackend-api.onrender.com' } });
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Invalid'));
+  });
+
+  it('rejects non-http(s) protocols in a release build', () => {
+    loadEnv({ dev: false, extra: { apiBaseUrl: 'ftp://files.example' } });
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Invalid'));
+  });
+
+  it('keeps the (invalid) value so the misconfiguration is visible in logs', () => {
+    const env = loadEnv({ dev: false, extra: { apiBaseUrl: 'not a url' } });
+    expect(env.apiBaseUrl).toBe('not a url');
+  });
+
+  it('accepts valid http and https URLs in a release build without noise', () => {
+    const https = loadEnv({ dev: false, extra: { apiBaseUrl: 'https://api.example' } });
+    const http = loadEnv({ dev: true, extra: { apiBaseUrl: 'http://localhost:8081' } });
+    expect(https.apiBaseUrl).toBe('https://api.example');
+    expect(http.apiBaseUrl).toBe('http://localhost:8081');
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it('dev builds only warn for invalid URLs (never console.error)', () => {
+    loadEnv({ dev: true, extra: { apiBaseUrl: 'nope' } });
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('Invalid'));
+    expect(console.error).not.toHaveBeenCalled();
   });
 });

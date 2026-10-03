@@ -24,13 +24,44 @@ type Extra = {
 
 const extra = (Constants.expoConfig?.extra ?? {}) as Extra;
 
+/** Accept only absolute http(s) URLs — `10.0.2.2` rewrite comes later. */
+function isValidHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Missing or malformed base URL is a build-configuration bug. Development
+ * warns and carries on; a release build logs a LOUD error (visible in crash/
+ * console logs — criterion: misconfiguration detectable in logs) but keeps the
+ * app launchable with the same value, mirroring guardMockAuth: a config leak
+ * must be visible, not brick the installed app.
+ */
 function required(value: string | undefined, name: string): string {
   if (!value) {
-    // Fail loud in development; a missing base URL is a configuration bug.
     if (__DEV__) {
       console.warn(`[env] Missing config value "${name}". Falling back to a placeholder.`);
+    } else {
+      console.error(
+        `[env] Missing config value "${name}" in a release build — ` +
+          'API calls will fail until this build is configured.',
+      );
     }
     return '';
+  }
+  if (!isValidHttpUrl(value)) {
+    if (__DEV__) {
+      console.warn(`[env] Invalid config value "${name}": ${JSON.stringify(value)}.`);
+    } else {
+      console.error(
+        `[env] Invalid "${name}" (${JSON.stringify(value)}) in a release build — ` +
+          'set a valid http(s) URL for this build profile.',
+      );
+    }
   }
   return value;
 }
