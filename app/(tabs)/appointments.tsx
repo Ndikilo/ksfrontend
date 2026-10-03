@@ -70,8 +70,12 @@ export default function AppointmentsScreen() {
     setLoadMoreError(false);
   }, [list.data]);
 
-  const loadMore = useCallback(async () => {
-    if (nextCursor === null || isLoadingMore || loadMoreError) return;
+  // `isRetry` bypasses the loadMoreError guard (qc-007 MAJOR): the Retry tap
+  // runs while this closure still observes the captured `loadMoreError ===
+  // true` — without the flag the call returned immediately and the retry
+  // button hid itself doing nothing.
+  const loadMore = useCallback(async (isRetry = false) => {
+    if (nextCursor === null || isLoadingMore || (loadMoreError && !isRetry)) return;
     setIsLoadingMore(true);
     try {
       const page = await appointmentsService.list({ limit: PAGE_SIZE, cursor: nextCursor });
@@ -88,7 +92,7 @@ export default function AppointmentsScreen() {
 
   const retryLoadMore = useCallback(() => {
     setLoadMoreError(false);
-    void loadMore();
+    void loadMore(true);
   }, [loadMore]);
 
   // Tabs stay mounted — refetch on every RE-focus so bookings/cancellations

@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import type { ReactNode } from 'react';
 
@@ -114,7 +114,11 @@ describe('AppointmentDetailScreen (P4.T2)', () => {
     expect(mockCancel).not.toHaveBeenCalled();
 
     const destructive = buttons?.find((button) => button?.text === 'Yes, cancel');
-    destructive?.onPress?.();
+    // act: the confirm handler starts a mutation — state updates must be
+    // wrapped (qc-007 minor: Alert onPress outside act).
+    await act(async () => {
+      destructive?.onPress?.();
+    });
     await waitFor(() => expect(mockCancel).toHaveBeenCalledWith('apt-1'));
     alertSpy.mockRestore();
   });
@@ -253,7 +257,11 @@ describe('AppointmentDetailScreen (P4.T2)', () => {
     const destructive = alertSpy.mock.calls[0][2]?.find(
       (button) => button?.text === 'Yes, cancel',
     );
-    destructive?.onPress?.();
+    // act: the confirm handler starts a mutation (qc-007 minor — the warning
+    // surfaced at this line, same pattern as the first cancel test).
+    await act(async () => {
+      destructive?.onPress?.();
+    });
     await waitFor(() => expect(mockCancel).toHaveBeenCalledWith('apt-1'));
     expect(screen.queryByText('Your appointment has been moved.')).toBeNull();
     alertSpy.mockRestore();
@@ -270,6 +278,9 @@ describe('AppointmentDetailScreen (P4.T2)', () => {
     expect(await screen.findByText('No open times in the next two weeks.')).toBeTruthy();
     fireEvent.press(screen.getByText('Refresh times'));
     await waitFor(() => expect(mockOpenSlots).toHaveBeenCalledTimes(2));
+    // qc-007 minor: the EMPTY branch also keeps a close affordance.
+    fireEvent.press(screen.getByText('Keep current time'));
+    expect(await screen.findByText('Reschedule')).toBeTruthy();
   });
 
   it('shows an error state with retry when the appointment fails to load', async () => {
@@ -322,6 +333,9 @@ describe('AppointmentDetailScreen (P4.T2)', () => {
     fireEvent.press(await screen.findByText('Reschedule'));
 
     expect(await screen.findByText('No connection.')).toBeTruthy();
+    // qc-007 minor: the ERROR branch keeps a close affordance too — the user
+    // can back out to the detail screen without abandoning it.
+    expect(screen.getByText('Keep current time')).toBeTruthy();
     mockOpenSlots.mockResolvedValue({
       data: [SLOT],
       meta: { count: 1, from: SLOT.startsAt, to: SLOT.endsAt },

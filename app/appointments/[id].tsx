@@ -277,6 +277,14 @@ function ReschedulePicker({
           fullWidth
           onPress={() => void refetchSlots()}
         />
+        {/* Every picker branch keeps an exit (qc-007 minor): the sole escape
+            must not be a back gesture that abandons the whole detail screen. */}
+        <Button
+          title={t('appointments.rescheduleKeepCurrent')}
+          variant="outline"
+          fullWidth
+          onPress={onClose}
+        />
       </>
     );
   }
@@ -349,15 +357,17 @@ function ReschedulePicker({
               void reschedule.mutate({ id: appointment.id, slotId: slotKey });
             }}
           />
-          <Button
-            title={t('appointments.rescheduleKeepCurrent')}
-            variant="outline"
-            fullWidth
-            disabled={reschedule.isLoading}
-            onPress={onClose}
-          />
         </>
       )}
+      {/* Rendered in BOTH the empty and populated branches (qc-007 minor):
+          "Keep current time" was previously reachable only with slots loaded. */}
+      <Button
+        title={t('appointments.rescheduleKeepCurrent')}
+        variant="outline"
+        fullWidth
+        disabled={reschedule.isLoading}
+        onPress={onClose}
+      />
     </Card>
   );
 }

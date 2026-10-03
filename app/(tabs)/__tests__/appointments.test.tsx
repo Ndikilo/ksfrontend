@@ -203,9 +203,15 @@ describe('AppointmentsScreen (P4.T2)', () => {
 
     mockList.mockResolvedValue(page([PAST_DONE]));
     fireEvent.press(screen.getByText('Try again'));
-    await waitFor(() =>
-      expect(mockList).toHaveBeenCalledWith({ limit: 50, cursor: 'cursor-1' }),
-    );
+    // The retry must issue a NEW call (standard §2): toHaveBeenCalledWith
+    // alone is vacuous — it matches the FAILED call already in history, which
+    // is exactly the dead-retry-tap regression qc-007 caught (the stale
+    // closure returned before fetching). Mount + failed page + retry = 3.
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(3));
+    expect(mockList).toHaveBeenLastCalledWith({ limit: 50, cursor: 'cursor-1' });
+    // And the retried page actually loaded: the past segment gains apt-3.
+    fireEvent.press(screen.getByText('Past'));
+    expect(await screen.findByTestId('appointment-row-apt-3')).toBeTruthy();
   });
 
   it('a re-focus refetch keeps the list mounted (stale-while-revalidate)', async () => {
