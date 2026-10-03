@@ -7,6 +7,9 @@
     "icon": "./assets/icon.png",
     "scheme": "kanasante",
     "userInterfaceStyle": "automatic",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "cm.kanasante.app"

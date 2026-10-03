@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 
+import { useUpdateCheck } from '@/hooks';
 import { AppProviders } from '@/providers/AppProviders';
 import { useTheme } from '@/theme';
 import { initSentry } from '@/utils/sentry';
@@ -20,6 +21,9 @@ void SplashScreen.preventAutoHideAsync();
  * themselves — this file only composes providers + the stack.
  */
 export default function RootLayout() {
+  // Silent OTA update checks (launch + foreground, throttled) — no-op until
+  // expo.updates.url is configured; downloaded bundles apply on next start.
+  useUpdateCheck();
   return (
     <AppProviders>
       <RootNavigator />

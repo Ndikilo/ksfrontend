@@ -334,3 +334,34 @@ sets `EXPO_PUBLIC_API_BASE_URL`, which [`src/config/env.ts`](src/config/env.ts)
 prefers over `app.json > expo.extra.apiBaseUrl`, so one config serves every
 environment. Validate a profile without building:
 `eas build --profile production --platform android --local` (requires `eas login`).
+
+## Over-the-air updates (expo-updates)
+
+JS-only fixes ship without a store release via
+[expo-updates](https://docs.expo.dev/eas-update/introduction):
+
+- `expo.runtimeVersion` uses the `appVersion` policy: an OTA bundle only loads
+  on installs of the `expo.version` it was published for. **Any change to
+  native modules or config plugins needs a store build, not an OTA update** —
+  bump `expo.version` in the same PR as those changes so bundles stay matched.
+- Each EAS profile has an EAS Update `channel` (development / preview /
+  production). Publish with `eas update --profile <profile> -m "<message>"`.
+- The app checks silently on launch and every foreground (throttled to one
+  call per 15 min; [`src/hooks/useUpdateCheck.ts`](src/hooks/useUpdateCheck.ts)
+  → [`src/utils/updates.ts`](src/utils/updates.ts)). A downloaded bundle
+  applies on the **next cold start** — never an in-session reload, so an
+  active booking or payment can't be interrupted.
+- Until configured, everything is dormant: `Updates.isEnabled` is false and
+  the checks no-op.
+
+Setup (human, once, requires the Expo account from the EAS profiles step):
+
+```bash
+npx eas update:configure   # sets expo.updates.url + expo.extra.eas.projectId
+eas update --profile production -m "first OTA bundle"   # sanity publish
+```
+
+Verify on a device: open the production build, background/foreground it after
+publishing, force-quit, relaunch — the new bundle is live (check
+`Updates.currentlyRunning` via a debug screen if unsure).
+
