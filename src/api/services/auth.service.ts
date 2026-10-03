@@ -107,16 +107,53 @@ const challenge = (identifier: string): OtpChallenge => ({
 /**
  * Sign-up data awaiting email verification. Held in memory and mirrored into
  * secure storage so an app restart mid-OTP can still complete the flow. The
- * password lives only in the device keychain and is wiped once used.
+ * password lives only in the device keychain and is wiped once used — or once
+ * `AppConfig.pendingPasswordTtlMs` has passed since `createdAt` (enforced on
+ * every use and again on cold start; see `expirePendingPassword`).
  */
-type PendingAuth = { email: string; password?: string; profile?: RegisterPayload };
+type PendingAuth = { email: string; password?: string; profile?: RegisterPayload; createdAt?: number };
 
 let pendingAuth: PendingAuth | null = null;
 
+/**
+ * Pure TTL rule: a pending registration's password is expired when the entry
+ * is older than the configured TTL — or carries no `createdAt` at all (a
+ * pre-TTL mirror from an older app version must be treated as stale, never
+ * trusted with a live password).
+ */
+export function pendingPasswordExpired(
+  entry: PendingAuth | null,
+  now: number = Date.now(),
+): boolean {
+  if (!entry?.password) return false; // nothing to expire
+  if (entry.createdAt === undefined) return true; // legacy entry — treat as stale
+  return now - entry.createdAt > AppConfig.pendingPasswordTtlMs;
+}
+
+/**
+ * Wipe the pending password if it is past its TTL. Email/profile are KEPT so
+ * the registration can still complete via the sign-in fallback
+ * (SESSION_REQUIRED). No-op for fresh or already-passwordless entries. Called
+ * on every pending read (auto-expire while running) and once on cold start
+ * (from AuthContext's bootstrap — timers don't survive a restart).
+ */
+export async function expirePendingPassword(now: number = Date.now()): Promise<void> {
+  const entry =
+    pendingAuth ?? (await storage.getJSON<PendingAuth>(StorageKeys.pendingRegistration));
+  if (!entry || !pendingPasswordExpired(entry, now)) return;
+
+  const redacted: PendingAuth = { email: entry.email, profile: entry.profile };
+  if (pendingAuth) pendingAuth = redacted; // memory copy only if one exists
+  await savePending(redacted); // persist the redaction (fresh timestamp, no password)
+}
+
 async function savePending(next: PendingAuth | null): Promise<void> {
-  pendingAuth = next;
+  // Stamp createdAt on the MEMORY copy too — the TTL rule treats a missing
+  // timestamp as a stale legacy entry, so an unstamped fresh password would
+  // be wiped on its very first TTL check.
+  pendingAuth = next ? { ...next, createdAt: next.createdAt ?? Date.now() } : null;
   if (next) {
-    await storage.setJSON(StorageKeys.pendingRegistration, next);
+    await storage.setJSON(StorageKeys.pendingRegistration, pendingAuth);
   } else {
     await storage.remove(StorageKeys.pendingRegistration);
   }
@@ -147,6 +184,9 @@ async function realVerifyRegistration(args: {
   const email = args.identifier.trim();
   await http.post(endpoints.auth.verifyEmail, { email, otp: args.code });
 
+  // Auto-expire: a pending password past its TTL is wiped before use, so the
+  // lookup below falls into the SESSION_REQUIRED sign-in fallback.
+  await expirePendingPassword();
   const pending = pendingAuth ?? (await storage.getJSON<PendingAuth>(StorageKeys.pendingRegistration));
   const password = email === pending?.email ? pending?.password : undefined;
   const profile = email === pending?.email ? pending?.profile : undefined;

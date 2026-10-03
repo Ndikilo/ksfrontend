@@ -8,7 +8,13 @@ import {
   type ReactNode,
 } from 'react';
 
-import { authService, isApiError, setAuthToken, setUnauthorizedHandler } from '@/api';
+import {
+  authService,
+  expirePendingPassword,
+  isApiError,
+  setAuthToken,
+  setUnauthorizedHandler,
+} from '@/api';
 import { StorageKeys } from '@/constants';
 import type { AuthSession, Credentials } from '@/types';
 import { logger, storage } from '@/utils';
@@ -73,6 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUnauthorizedHandler(() => void applySession(null));
 
     (async () => {
+      // Cold-start TTL enforcement: a pending registration password older than
+      // 24h (or from a pre-TTL version) is wiped before anything can use it.
+      await expirePendingPassword();
+
       const stored = await storage.getJSON<AuthSession>(StorageKeys.authSession);
       if (!stored?.token) {
         setStatus('unauthenticated');

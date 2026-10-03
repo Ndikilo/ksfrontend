@@ -6,7 +6,8 @@
 /** Keys used with the secure `storage` util. Centralised to avoid collisions. */
 export const StorageKeys = {
   authSession: 'auth.session',
-  /** Short-lived sign-up payload (email/password/profile) awaiting OTP verify. */
+  /** Short-lived sign-up payload (email/password/profile) awaiting OTP verify.
+   *  The password inside expires (see AppConfig.pendingPasswordTtlMs). */
   pendingRegistration: 'auth.pendingRegistration',
   themePreference: 'settings.theme',
   language: 'settings.language',
@@ -25,6 +26,13 @@ export const AppConfig = {
   consentVersion: '1.0',
   /** The backend's emailed OTPs expire after 5 minutes. */
   otpExpiresInSeconds: 300,
+  /**
+   * How long the not-yet-verified registration password may live (in secure
+   * storage + memory) before it is wiped — enforced on every use and again on
+   * cold start. After expiry the registration still completes via the
+   * sign-in fallback (SESSION_REQUIRED).
+   */
+  pendingPasswordTtlMs: 24 * 60 * 60 * 1000,
 } as const;
 
 export { Images, LOGO_ASPECT_RATIO } from './assets';
