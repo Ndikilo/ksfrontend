@@ -65,8 +65,11 @@ is the committed twin — keep them identical.
   paginates (cursor, like the API). Images have fixed dimensions.
 - i18n: every user-facing string through `t()` (`src/i18n`, en + fr always both);
   no `allowFontScaling={false}`; layouts must survive ~+20% French expansion and
-  OS font scaling. Errors say what happened + what to do next ("This slot was
-  just taken. Pick another time."), never "Error 409".
+  OS font scaling. Interpolated keys (`{{param}}`) must receive every param at
+  EVERY call site — a missing param renders the literal `{{param}}` to the user
+  (i18next does not blank it); when parameterizing or renaming a key, grep all
+  `t('key…')` call sites. Errors say what happened + what to do next ("This
+  slot was just taken. Pick another time."), never "Error 409".
 
 ## 3. Copy (no AI slop)
 

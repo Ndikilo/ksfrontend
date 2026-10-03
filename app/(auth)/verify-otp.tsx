@@ -47,7 +47,7 @@ export default function VerifyOtpScreen() {
   const onVerify = () => {
     setLocalError(null);
     if (code.length < OTP_LENGTH) {
-      setLocalError(t('otp.enterCode'));
+      setLocalError(t('otp.enterCode', { length: OTP_LENGTH }));
       return;
     }
     void mutate(code);
@@ -87,7 +87,7 @@ export default function VerifyOtpScreen() {
         </View>
 
         {displayError ? (
-          <Text variant="caption" color="danger" align="center" style={styles.error}>
+          <Text variant="caption" color="dangerText" align="center" style={styles.error}>
             {displayError}
           </Text>
         ) : null}
