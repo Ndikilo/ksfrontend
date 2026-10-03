@@ -1,6 +1,6 @@
 import { Component, type ReactNode } from 'react';
 
-import { logger } from '@/utils';
+import { reportError } from '@/utils/sentry';
 
 import { ErrorState } from './ErrorState';
 
@@ -20,7 +20,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: { componentStack?: string | null }) {
-    logger.error('ErrorBoundary', error.message, info.componentStack);
+    // Sentry (when configured) + the local log — one report, both sinks.
+    reportError(error, { componentStack: info.componentStack });
   }
 
   reset = () => this.setState({ hasError: false });

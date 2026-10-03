@@ -4,6 +4,11 @@ import * as SplashScreen from 'expo-splash-screen';
 
 import { AppProviders } from '@/providers/AppProviders';
 import { useTheme } from '@/theme';
+import { initSentry } from '@/utils/sentry';
+
+// Error reporting first: capture even early render crashes once configured.
+// No-op until a DSN is set in app.json > expo.extra.sentryDsn.
+initSentry();
 
 // Keep the native splash visible until the in-app splash screen takes over,
 // so there's no white flash between them.

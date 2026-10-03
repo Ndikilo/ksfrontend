@@ -280,3 +280,40 @@ npm run typecheck                 # strict TS, no errors
 npx expo-doctor                   # config/dependency health (20/20)
 npx expo export --platform ios    # confirm the bundle builds
 ```
+
+## Error reporting (Sentry)
+
+Crash + error reporting is wired but **disabled until a DSN is configured** —
+without one the app runs identically, reports degrade to the local log.
+
+Setup (human, once):
+
+1. Create a Sentry project for the mobile app ([sentry.io](https://sentry.io)),
+   note its **DSN** and the org/project slugs.
+2. Paste the DSN into [`app.json`](app.json) under `expo.extra.sentryDsn`
+   (a DSN is a public ingest URL, not a secret). Overridable per build profile
+   via EAS environment variables later.
+3. For EAS builds, add the secrets so source maps upload automatically
+   (org/project slugs feed the plugin; the token needs `project:write`):
+   ```bash
+   eas secret:create --name SENTRY_AUTH_TOKEN --value <token>
+   eas secret:create --name SENTRY_ORG --value <your-org-slug>
+   eas secret:create --name SENTRY_PROJECT --value <your-project-slug>
+   ```
+   Locally, put them in `.env.local` instead. Never commit them.
+
+What reports: render crashes (root `ErrorBoundary` → `reportError`), uncaught
+JS errors and rejections (Sentry global handlers, installed by
+`Sentry.init` in [`app/_layout.tsx`](app/_layout.tsx)).
+
+Verify on a dev build (`development` profile):
+
+```ts
+Sentry.captureException(new Error('kanasante test event'));
+```
+
+The event appears in the Sentry dashboard within ~30s. Production stack traces
+symbolicate automatically: the `@sentry/react-native/expo` config plugin +
+[`metro.config.js`](metro.config.js) upload source maps during every
+`eas build` (release builds only). For `eas update` / `expo export` bundles,
+upload manually: `npx sentry-expo-upload-sourcemaps dist`.

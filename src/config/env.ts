@@ -15,6 +15,11 @@ type Extra = {
   apiBaseUrl?: string;
   /** Escape hatch to run the UI against the local fake auth (default: real API). */
   mockAuth?: boolean;
+  /**
+   * Sentry DSN for error reporting. Public ingest URL (not a secret); empty
+   * disables error reporting entirely. See src/utils/sentry.ts.
+   */
+  sentryDsn?: string;
 };
 
 const extra = (Constants.expoConfig?.extra ?? {}) as Extra;
@@ -72,4 +77,6 @@ export const env = {
    * Dev-only: forced off (with a loud error) in release builds by guardMockAuth.
    */
   mockAuth: guardMockAuth(extra.mockAuth ?? false),
+  /** Sentry error-reporting DSN; '' = reporting disabled (see src/utils/sentry.ts). */
+  sentryDsn: extra.sentryDsn ?? '',
 } as const;
