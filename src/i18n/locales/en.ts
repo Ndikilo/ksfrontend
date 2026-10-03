@@ -156,6 +156,8 @@ export const en = {
     cancelConfirm: 'Yes, cancel',
     cancelKeep: 'Keep appointment',
     cancelledBanner: 'This appointment was cancelled.',
+    pendingBanner:
+      'The practitioner hasn’t confirmed this appointment yet — we’ll let you know as soon as they do.',
     lateCancelBanner:
       'Cancelled inside the {{hours}} h notice window — the {{fee}} XAF fee applies.',
     rescheduleTitle: 'Pick a new time',

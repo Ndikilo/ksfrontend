@@ -169,4 +169,57 @@ describe('AppointmentDetailScreen (P4.T2)', () => {
     const screen = renderScreen();
     expect(await screen.findByText('Something went wrong')).toBeTruthy();
   });
+
+  it('a pending appointment explains itself (not yet confirmed) with a Pending badge', async () => {
+    mockGet.mockResolvedValue({ ...APPOINTMENT, status: 'pending' });
+    const screen = renderScreen();
+    expect(
+      await screen.findByText(
+        'The practitioner hasn’t confirmed this appointment yet — we’ll let you know as soon as they do.',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByTestId('appointment-status-pending')).toBeTruthy();
+  });
+
+  it('SLOT_TAKEN on reschedule clears the dead slot and refetches availability', async () => {
+    mockReschedule.mockRejectedValue({
+      status: 409,
+      code: 'SLOT_TAKEN',
+      message: 'That time was just taken.',
+    });
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByText('Reschedule'));
+
+    const slotChip = await screen.findByTestId(`reschedule-slot-${SLOT.key}`);
+    fireEvent.press(slotChip);
+    // Re-query after the press — the original handle predates the re-render.
+    expect(screen.getByTestId(`reschedule-slot-${SLOT.key}`).props.accessibilityState).toMatchObject(
+      { selected: true },
+    );
+    fireEvent.press(screen.getByText('Confirm new time'));
+
+    await waitFor(() => expect(mockReschedule).toHaveBeenCalled());
+    // Recovery: the localized 409 copy is shown, the dead slot is deselected
+    // (a second Confirm could only 409 again) and availability is refetched.
+    expect(await screen.findByText('That time was just taken.')).toBeTruthy();
+    await waitFor(() => expect(mockOpenSlots).toHaveBeenCalledTimes(2));
+    expect(screen.getByTestId(`reschedule-slot-${SLOT.key}`).props.accessibilityState).toMatchObject(
+      { selected: false },
+    );
+  });
+
+  it('a slots-load failure inside the reschedule picker offers a retry', async () => {
+    mockOpenSlots.mockRejectedValueOnce({ status: 0, code: 'OFFLINE', message: 'No connection.' });
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByText('Reschedule'));
+
+    expect(await screen.findByText('No connection.')).toBeTruthy();
+    mockOpenSlots.mockResolvedValue({
+      data: [SLOT],
+      meta: { count: 1, from: SLOT.startsAt, to: SLOT.endsAt },
+    });
+    fireEvent.press(screen.getByText('Try again'));
+    expect(await screen.findByTestId(`reschedule-slot-${SLOT.key}`)).toBeTruthy();
+    expect(mockOpenSlots).toHaveBeenCalledTimes(2);
+  });
 });

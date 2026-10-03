@@ -156,6 +156,8 @@ export const fr: Translations = {
     cancelConfirm: 'Oui, annuler',
     cancelKeep: 'Garder le rendez-vous',
     cancelledBanner: 'Ce rendez-vous a été annulé.',
+    pendingBanner:
+      'Le praticien n’a pas encore confirmé ce rendez-vous — nous vous préviendrons dès que ce sera fait.',
     lateCancelBanner:
       'Annulé dans le délai de {{hours}} h — des frais de {{fee}} XAF s’appliquent.',
     rescheduleTitle: 'Choisissez un nouvel horaire',

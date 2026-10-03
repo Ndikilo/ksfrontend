@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -103,6 +103,9 @@ export default function AppointmentDetailScreen() {
       {cancel.error ? <Banner tone="error" message={cancel.error.message} /> : null}
       {justRescheduled ? (
         <Banner tone="success" message={t('appointments.rescheduledBanner')} />
+      ) : null}
+      {appointment.status === 'pending' ? (
+        <Banner tone="info" message={t('appointments.pendingBanner')} />
       ) : null}
       {appointment.status === 'cancelled' ? (
         <Banner tone="info" message={t('appointments.cancelledBanner')} />
@@ -228,6 +231,18 @@ function ReschedulePicker({
     { onSuccess: onDone },
   );
 
+  // SLOT_TAKEN recovery (same rule as the booking flow, Review 005 A4): the
+  // picked slot is dead — clear it and refetch availability, or keeping it
+  // selected would guarantee a second 409. Other errors keep the selection
+  // (the pick is still plausible; the Confirm button is the retry).
+  const refetchSlots = slots.refetch;
+  useEffect(() => {
+    if (reschedule.error?.code === 'SLOT_TAKEN') {
+      setSlotKey(null);
+      void refetchSlots();
+    }
+  }, [reschedule.error, refetchSlots]);
+
   if (slots.isLoading) {
     return (
       <View style={styles.centered}>
@@ -236,7 +251,17 @@ function ReschedulePicker({
     );
   }
   if (slots.error) {
-    return <Banner tone="error" message={slots.error.message} />;
+    return (
+      <>
+        <Banner tone="error" message={slots.error.message} />
+        <Button
+          title={t('common.retry')}
+          variant="outline"
+          fullWidth
+          onPress={() => void refetchSlots()}
+        />
+      </>
+    );
   }
 
   return (
