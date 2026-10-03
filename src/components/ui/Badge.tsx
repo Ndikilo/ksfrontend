@@ -30,13 +30,16 @@ function toneColors(colors: ColorScheme, tone: Tone): { bg: string; fg: string }
     case 'primary':
       return { bg: colors.primaryMuted, fg: colors.primary };
     case 'success':
-      return { bg: colors.successSurface, fg: colors.success };
+      // Copy uses the copy-safe tokens: status colors on their tints fail
+      // WCAG AA text (4.5:1) in at least one theme (light green is 2.75:1,
+      // light red 3.4:1, light amber 1.9:1, dark blue 3.2:1).
+      return { bg: colors.successSurface, fg: colors.successText };
     case 'warning':
-      return { bg: colors.warningSurface, fg: colors.warning };
+      return { bg: colors.warningSurface, fg: colors.warningText };
     case 'danger':
-      return { bg: colors.dangerSurface, fg: colors.danger };
+      return { bg: colors.dangerSurface, fg: colors.dangerText };
     case 'info':
-      return { bg: colors.infoSurface, fg: colors.info };
+      return { bg: colors.infoSurface, fg: colors.infoText };
     default:
       return { bg: colors.surfaceAlt, fg: colors.textMuted };
   }

@@ -22,7 +22,7 @@ const ICONS: Record<Tone, keyof typeof Ionicons.glyphMap> = {
 /** Inline status banner (e.g. the green "Password reset successful"). Reusable. */
 export function Banner({ message, tone = 'info', style }: BannerProps) {
   const theme = useTheme();
-  const { bg, fg, border } = toneColors(theme.colors, tone);
+  const { bg, fg, icon, border } = toneColors(theme.colors, tone);
 
   return (
     <View
@@ -33,7 +33,7 @@ export function Banner({ message, tone = 'info', style }: BannerProps) {
         style,
       ]}
     >
-      <Ionicons name={ICONS[tone]} size={20} color={fg} />
+      <Ionicons name={ICONS[tone]} size={20} color={icon} />
       <Text variant="caption" style={{ color: fg, flex: 1 }}>
         {message}
       </Text>
@@ -41,18 +41,49 @@ export function Banner({ message, tone = 'info', style }: BannerProps) {
   );
 }
 
-function toneColors(colors: ColorScheme, tone: Tone) {
+function toneColors(colors: ColorScheme, tone: Tone): {
+  bg: string;
+  fg: string;
+  icon: string;
+  border: string;
+} {
   switch (tone) {
     case 'success':
-      return { bg: colors.successSurface, fg: colors.success, border: colors.success };
+      // Light-mode green on its tint is 2.75:1 — below even the 3:1 icon bar —
+      // so the copy-safe token carries both copy and icon.
+      return {
+        bg: colors.successSurface,
+        fg: colors.successText,
+        icon: colors.successText,
+        border: colors.success,
+      };
     case 'error':
-      return { bg: colors.dangerSurface, fg: colors.danger, border: colors.danger };
+      // Copy in the copy-safe token (light red is 3.4:1, dark 3.9:1 — both
+      // below AA text); red keeps icon/border (≥3:1 holds in both themes).
+      return {
+        bg: colors.dangerSurface,
+        fg: colors.dangerText,
+        icon: colors.danger,
+        border: colors.danger,
+      };
     case 'warning':
-      // Copy/icon in the copy-safe token: light-mode amber-on-amber fails
-      // AA (≈1.9:1). The border keeps the status color for the accent line.
-      return { bg: colors.warningSurface, fg: colors.warningText, border: colors.warning };
+      // Amber on its tint fails AA in light mode (≈1.9:1); the copy-safe
+      // warningText token carries copy and icon, border keeps the accent.
+      return {
+        bg: colors.warningSurface,
+        fg: colors.warningText,
+        icon: colors.warningText,
+        border: colors.warning,
+      };
     default:
-      return { bg: colors.infoSurface, fg: colors.info, border: colors.info };
+      // Copy in the copy-safe token (dark blue is 3.2:1 — below AA text);
+      // blue keeps icon/border (≥3:1 holds in both themes).
+      return {
+        bg: colors.infoSurface,
+        fg: colors.infoText,
+        icon: colors.info,
+        border: colors.info,
+      };
   }
 }
 
