@@ -277,9 +277,19 @@ failure into a friendly `ApiError` — so screens only handle one error shape. A
 
 ```bash
 npm run typecheck                 # strict TS, no errors
-npx expo-doctor                   # config/dependency health (20/20)
+npm test                          # jest-expo unit tests (pure helpers, config guard, error tables)
+npm run lint                      # eslint, 0 errors
+npx expo-doctor                   # config/dependency health
 npx expo export --platform ios    # confirm the bundle builds
 ```
+
+Tests live next to the code they cover in `__tests__/` folders and run in CI
+(`.github/workflows/ci.yml`). They cover pure logic — error normalization,
+validators, auth-service mapping helpers, and the env config guard. Mocking
+rules for tests: mock at module seams (`jest.mock('expo-constants', ...)` etc.);
+a hoisted factory may only reference variables named `mock*`, which individual
+tests mutate before re-importing the module under test (`jest.resetModules` +
+`require`) when it computes config at import time.
 
 ## Error reporting (Sentry)
 
