@@ -4,8 +4,9 @@ import type { ReactNode } from 'react';
 import '@/i18n'; // i18next instance for useTranslation (the app imports it at the root)
 import { ThemeProvider } from '@/theme';
 import type { ApiError, Appointment, Dependent, PractitionerDetail, PublicSlot } from '@/types';
+import { groupSlotsByDay } from '@/utils';
 
-import BookingScreen, { groupSlotsByDay, SuccessStep } from '../[id]';
+import BookingScreen, { SuccessStep } from '../[id]';
 
 // The icon package drags in expo-font/expo-asset native modules — stub it.
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));

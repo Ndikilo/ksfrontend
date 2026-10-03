@@ -127,8 +127,42 @@ export const fr: Translations = {
 
   tabs: {
     home: 'Accueil',
+    appointments: 'Rendez-vous',
     search: 'Trouver soins',
     profile: 'Profil',
+  },
+
+  appointments: {
+    title: 'Rendez-vous',
+    upcoming: 'À venir',
+    past: 'Passés',
+    upcomingEmptyTitle: 'Aucun rendez-vous à venir',
+    upcomingEmptyMessage: 'Vos prochains rendez-vous apparaîtront ici.',
+    upcomingEmptyAction: 'Trouver un praticien',
+    pastEmptyTitle: 'Aucun rendez-vous passé',
+    pastEmptyMessage: 'L’historique de vos rendez-vous apparaîtra ici.',
+    detailTitle: 'Rendez-vous',
+    statusPending: 'En attente',
+    statusConfirmed: 'Confirmé',
+    statusCancelled: 'Annulé',
+    statusCompleted: 'Terminé',
+    statusNoShow: 'Manqué',
+    forDependent: 'Réservé pour un proche',
+    cancelAction: 'Annuler le rendez-vous',
+    rescheduleAction: 'Déplacer',
+    cancelConfirmTitle: 'Annuler ce rendez-vous ?',
+    cancelConfirmLate:
+      'Le délai de préavis est de {{hours}} h — annuler maintenant constitue une annulation tardive et des frais de {{fee}} XAF s’appliquent.',
+    cancelConfirm: 'Oui, annuler',
+    cancelKeep: 'Garder le rendez-vous',
+    cancelledBanner: 'Ce rendez-vous a été annulé.',
+    lateCancelBanner:
+      'Annulé dans le délai de {{hours}} h — des frais de {{fee}} XAF s’appliquent.',
+    rescheduleTitle: 'Choisissez un nouvel horaire',
+    rescheduleConfirm: 'Confirmer le nouvel horaire',
+    rescheduleEmpty: 'Aucun créneau libre dans les deux prochaines semaines.',
+    rescheduledBanner: 'Votre rendez-vous a été déplacé.',
+    priceLabel: 'Prix',
   },
 
   search: {

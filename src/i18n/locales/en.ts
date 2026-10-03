@@ -127,8 +127,42 @@ export const en = {
 
   tabs: {
     home: 'Home',
+    appointments: 'Appointments',
     search: 'Find Care',
     profile: 'Profile',
+  },
+
+  appointments: {
+    title: 'Appointments',
+    upcoming: 'Upcoming',
+    past: 'Past',
+    upcomingEmptyTitle: 'No upcoming appointments',
+    upcomingEmptyMessage: 'When you book an appointment, it will show up here.',
+    upcomingEmptyAction: 'Find a practitioner',
+    pastEmptyTitle: 'No past appointments',
+    pastEmptyMessage: 'Your appointment history will appear here.',
+    detailTitle: 'Appointment',
+    statusPending: 'Pending',
+    statusConfirmed: 'Confirmed',
+    statusCancelled: 'Cancelled',
+    statusCompleted: 'Completed',
+    statusNoShow: 'Missed',
+    forDependent: 'Booked for a dependent',
+    cancelAction: 'Cancel appointment',
+    rescheduleAction: 'Reschedule',
+    cancelConfirmTitle: 'Cancel this appointment?',
+    cancelConfirmLate:
+      'The notice window is {{hours}} h — cancelling now is a late cancellation and the {{fee}} XAF fee applies.',
+    cancelConfirm: 'Yes, cancel',
+    cancelKeep: 'Keep appointment',
+    cancelledBanner: 'This appointment was cancelled.',
+    lateCancelBanner:
+      'Cancelled inside the {{hours}} h notice window — the {{fee}} XAF fee applies.',
+    rescheduleTitle: 'Pick a new time',
+    rescheduleConfirm: 'Confirm new time',
+    rescheduleEmpty: 'No open times in the next two weeks.',
+    rescheduledBanner: 'Your appointment has been moved.',
+    priceLabel: 'Price',
   },
 
   search: {

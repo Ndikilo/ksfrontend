@@ -3,3 +3,4 @@ export { initSentry, reportError } from './sentry';
 export { storage } from './storage';
 export * from './validators';
 export * from './format';
+export * from './slots';

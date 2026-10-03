@@ -20,6 +20,9 @@ export default function TabsLayout() {
   const TabHomeIcon = ({ focused }: { focused: boolean }) => (
     <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={iconColor(focused)} />
   );
+  const TabAppointmentsIcon = ({ focused }: { focused: boolean }) => (
+    <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={22} color={iconColor(focused)} />
+  );
   const TabSearchIcon = ({ focused }: { focused: boolean }) => (
     <Ionicons name={focused ? 'search' : 'search-outline'} size={22} color={iconColor(focused)} />
   );
@@ -42,6 +45,10 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{ title: t('tabs.home'), tabBarIcon: TabHomeIcon }}
+      />
+      <Tabs.Screen
+        name="appointments"
+        options={{ title: t('tabs.appointments'), tabBarIcon: TabAppointmentsIcon }}
       />
       <Tabs.Screen
         name="search"

@@ -17,7 +17,7 @@ import { useAsync, useMutation } from '@/hooks';
 import { useAuth } from '@/store';
 import { useTheme } from '@/theme';
 import type { Appointment, ID, PublicSlot } from '@/types';
-import { clinicDateKey, formatClinicDate } from '@/utils';
+import { formatClinicDate, groupSlotsByDay } from '@/utils';
 
 /**
  * The booking flow (P4.T1): availability picker → confirm (offering, who the
@@ -32,26 +32,7 @@ import { clinicDateKey, formatClinicDate } from '@/utils';
 
 type Step = 'when' | 'confirm' | 'success';
 
-/** A day's worth of open slots, keyed by its clinic-local calendar date. */
-type SlotDay = { key: string; label: string; slots: PublicSlot[] };
-
 const DAY_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
-
-/** Group open slots by clinic-local calendar day, soonest first — pure. */
-export const groupSlotsByDay = (slots: PublicSlot[]): SlotDay[] => {
-  const byDay = new Map<string, SlotDay>();
-  for (const slot of slots) {
-    const key = clinicDateKey(slot.startsAt);
-    const day = byDay.get(key) ?? {
-      key,
-      label: formatClinicDate(slot.startsAt, { weekday: 'short', day: 'numeric', month: 'short' }),
-      slots: [],
-    };
-    day.slots.push(slot);
-    byDay.set(key, day);
-  }
-  return [...byDay.values()].sort((a, b) => a.key.localeCompare(b.key));
-};
 
 const practitionerName = (detail: {
   prefix: string | null;
