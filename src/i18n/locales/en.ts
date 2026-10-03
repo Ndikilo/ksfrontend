@@ -84,6 +84,8 @@ export const en = {
     notReceived: "Haven't received code?",
     resend: 'Resend code',
     enterCode: 'Enter the 6-digit code',
+    a11yHint: 'Type the 6 digits of the code we sent you. You can also paste the whole code.',
+    digitsEntered: '{{count}} of {{total}} digits entered',
   },
 
   login: {

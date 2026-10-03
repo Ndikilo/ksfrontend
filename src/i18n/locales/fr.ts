@@ -84,6 +84,8 @@ export const fr: Translations = {
     notReceived: "Vous n'avez pas reçu le code ?",
     resend: 'Renvoyer le code',
     enterCode: 'Saisissez le code à 6 chiffres',
+    a11yHint: 'Tapez les 6 chiffres du code qui vous a été envoyé. Vous pouvez aussi coller le code entier.',
+    digitsEntered: '{{count}} chiffres saisis sur {{total}}',
   },
 
   login: {
