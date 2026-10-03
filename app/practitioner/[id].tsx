@@ -42,7 +42,7 @@ export default function PractitionerDetailScreen() {
     return (
       <Screen contentStyle={{ gap: theme.spacing.md }}>
         <BackButton />
-        <Text variant="body" color="danger">
+        <Text variant="body" color="dangerText">
           {error?.message ?? t('practitioner.notFound')}
         </Text>
         <Button title={t('common.retry')} variant="outline" onPress={refetch} />

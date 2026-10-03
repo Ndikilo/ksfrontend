@@ -217,7 +217,7 @@ export default function SearchScreen() {
 
       {!isLoading && error ? (
         <View style={{ gap: theme.spacing.md }}>
-          <Text variant="body" color="danger">
+          <Text variant="body" color="dangerText">
             {error.message}
           </Text>
           <Button title={t('search.clearFilters')} variant="outline" onPress={clearFilters} />

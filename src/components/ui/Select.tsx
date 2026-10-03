@@ -108,7 +108,7 @@ export function Select<T>({
       </Pressable>
 
       {error ? (
-        <Text variant="caption" color="danger" style={styles.error}>
+        <Text variant="caption" color="dangerText" style={styles.error}>
           {error}
         </Text>
       ) : null}

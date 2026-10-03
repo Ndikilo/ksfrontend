@@ -14,7 +14,7 @@ export function FieldLabel({ label, required }: { label: string; required?: bool
     <Text variant="bodyStrong" style={styles.label}>
       {label}:
       {required ? (
-        <Text variant="bodyStrong" style={{ color: theme.colors.danger }}>
+        <Text variant="bodyStrong" style={{ color: theme.colors.dangerText }}>
           {' '}
           *
         </Text>

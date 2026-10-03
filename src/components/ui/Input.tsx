@@ -125,7 +125,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
       </View>
 
       {error ? (
-        <Text variant="caption" color="danger" style={styles.helper}>
+        <Text variant="caption" color="dangerText" style={styles.helper}>
           {error}
         </Text>
       ) : hint ? (
