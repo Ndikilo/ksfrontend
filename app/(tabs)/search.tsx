@@ -16,7 +16,7 @@ import {
   Text,
 } from '@/components/ui';
 import { EmptyState } from '@/components/feedback';
-import { professionIcon } from '@/constants';
+import { CONSULTATION_TYPE_KEYS, professionIcon } from '@/constants';
 import { useAsync, useDebounce } from '@/hooks';
 import { useTheme } from '@/theme';
 import type {
@@ -135,7 +135,9 @@ export default function SearchScreen() {
   );
 
   const consultationLabel = useCallback(
-    (type: ConsultationType) => t(`search.${type === 'in_person' ? 'inPerson' : type}`),
+    // Typed type→key map — raw keys can never reach the UI (Review 006 BLOCKER:
+    // `search.home_visit` does not exist, home_visit rendered the literal key).
+    (type: ConsultationType) => t(`search.${CONSULTATION_TYPE_KEYS[type]}`),
     [t],
   );
 
