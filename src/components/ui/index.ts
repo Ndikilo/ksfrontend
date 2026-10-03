@@ -1,5 +1,6 @@
 export { Text, type TextProps } from './Text';
 export { Button, type ButtonProps } from './Button';
+export { Chip, type ChipProps } from './Chip';
 export { IconButton, type IconButtonProps } from './IconButton';
 export { Link, type LinkProps } from './Link';
 export { PageIndicator, type PageIndicatorProps } from './PageIndicator';

@@ -14,6 +14,7 @@ export const fr: Translations = {
     goBack: 'Retour',
     required: 'Requis',
     retry: 'Réessayer',
+    loading: 'Chargement…',
   },
 
   validation: {
@@ -179,23 +180,32 @@ export const fr: Translations = {
     slotsEmptyTitle: 'Aucun créneau libre',
     slotsEmptyMessage:
       '{{name}} n’a pas de créneau réservable dans les deux prochaines semaines. Revenez bientôt.',
+    slotsEmptyAction: 'Actualiser les horaires',
     confirmTitle: 'Confirmez votre réservation',
     whoLabel: 'Pour qui est ce rendez-vous ?',
     forMyself: 'Pour moi',
     offeringLabel: 'Consultation',
     whenLabel: 'Quand',
     withLabel: 'Avec',
-    policyNotice:
-      'Vous pouvez annuler sans frais avant le délai de préavis du praticien. La règle exacte s’affiche dès la réservation confirmée.',
+    // Chiffres réels de la politique publique du praticien (Review 005 A5) :
+    // les conditions sont connues AVANT la réservation, en phrases complètes.
+    confirmPolicyFree: 'Annulation gratuite jusqu’à {{hours}} h avant le début.',
+    confirmPolicyFee:
+      'Annulation gratuite jusqu’à {{hours}} h avant le début. Au-delà, les annulations sont facturées {{fee}} XAF.',
+    noOfferingMatch:
+      'Cet horaire ne correspond à aucune des consultations proposées par ce praticien. Choisissez un autre horaire.',
     next: 'Suivant',
     confirm: 'Confirmer le rendez-vous',
     backToSlots: 'Retour aux horaires',
     successTitle: 'Rendez-vous réservé',
-    successWhen: '{{when}}',
-    successPolicyFree: 'Annulation sans frais jusqu’à {{hours}} h avant le début.',
+    successPolicyFree: 'Annulation gratuite jusqu’à {{hours}} h avant le début.',
     successPolicyFee:
-      'Annulation sans frais jusqu’à {{hours}} h avant le début ; au-delà, des frais de {{fee}} XAF peuvent s’appliquer.',
+      'Annulation gratuite jusqu’à {{hours}} h avant le début. Au-delà, les annulations sont facturées {{fee}} XAF.',
     done: 'Terminé',
+    // Annonces des créneaux pour les lecteurs d’écran : heure + type + état.
+    chipSelected: 'sélectionné',
+    chipNotSelected: 'non sélectionné',
+    slotChipLabel: '{{time}}, {{types}} — {{state}}',
   },
 
   home: {

@@ -36,6 +36,9 @@ export const AppConfig = {
 } as const;
 
 export { Images, LOGO_ASPECT_RATIO } from './assets';
+export {
+  CONSULTATION_TYPE_KEYS,
+} from './consultation';
 export { LANGUAGES, DEFAULT_LANGUAGE, type Language, type LanguageCode } from './languages';
 export { professionIcon, FALLBACK_PROFESSION_ICON } from './professionIcons';
 export {

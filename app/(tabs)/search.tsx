@@ -228,7 +228,7 @@ export default function SearchScreen() {
         <EmptyState
           title={t('search.noResultsTitle')}
           message={t('search.noResultsMessage')}
-          icon={<Ionicons name="search-outline" size={40} color={theme.colors.textMuted} />}
+          icon={<Ionicons name="search-outline" size={48} color={theme.colors.textMuted} />}
           actionLabel={hasActiveFilters ? t('search.clearFilters') : undefined}
           onAction={hasActiveFilters ? clearFilters : undefined}
         />

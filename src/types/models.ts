@@ -228,6 +228,9 @@ export type PractitionerDetail = {
   yearsExperience: number | null;
   consultationFeeXaf: number | null;
   consultationTypes: ConsultationType[] | null;
+  /** Cancellation policy in force — shown to patients before they book. */
+  cancellationNoticeHours: number;
+  cancellationFeeXaf: number;
   rating: PractitionerRating & { distribution: Record<string, number> };
   verification: { status: string; body: string; registrationNumber: string };
   booking: { bookable: boolean; reasons: string[] };

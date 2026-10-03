@@ -14,17 +14,19 @@ import { isEmail, isNonEmpty } from '@/utils';
 
 /**
  * Login. On success the AuthProvider status flips to authenticated and the
- * (auth) layout redirects into the app. Shows an optional success banner passed
- * via the `notice` param (e.g. after a password reset).
+ * (auth) layout redirects into the app — honoring a `redirect` param so flows
+ * like booking resume where the user left off. Shows an optional success banner
+ * passed via the `notice` param (e.g. after a password reset).
  *
  * If the backend replies 403 EMAIL_NOT_VERIFIED, `authService.login` has
- * already (re-)sent the OTP — route into the verification flow; verifying then
- * signs straight in with the credentials just entered.
+ * already (re-)sent the OTP — route into the verification flow (carrying the
+ * redirect through); verifying then signs straight in with the credentials
+ * just entered.
  */
 export default function LoginScreen() {
   const { t } = useTranslation();
   const { signIn } = useAuth();
-  const { notice } = useLocalSearchParams<{ notice?: string }>();
+  const { notice, redirect } = useLocalSearchParams<{ notice?: string; redirect?: string }>();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -41,6 +43,7 @@ export default function LoginScreen() {
             identifier: identifier.trim(),
             maskedTarget: maskEmail(identifier.trim()),
             expiresIn: '300',
+            ...(redirect !== undefined ? { redirect } : {}),
           },
         });
       }

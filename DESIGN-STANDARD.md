@@ -39,7 +39,8 @@ is the committed twin — keep them identical.
 - Icons: `Ionicons` from `@expo/vector-icons` (the only family; outline variant
   for inactive tab states). Glyph sizes: 20 standard, 22 in large controls —
   one size per context, never a smaller one-off for a sibling component (a
-  global banner matches `Banner`, not its own size). No mixed families, no
+  global banner matches `Banner`, not its own size). EmptyState icons: 48,
+  everywhere (not 40/44/56 per screen). No mixed families, no
   AI-generated imagery; brand assets come from `assets/` (`<Logo>`,
   `<Watermark>`).
 
@@ -70,6 +71,9 @@ is the committed twin — keep them identical.
   (i18next does not blank it); when parameterizing or renaming a key, grep all
   `t('key…')` call sites. Errors say what happened + what to do next ("This
   slot was just taken. Pick another time."), never "Error 409".
+- Money-adjacent terms are committed with their ACTUAL numbers before the user
+  commits: the confirm step states the real cancellation notice window and fee
+  (from the practitioner's policy), never "details shown after booking".
 
 ## 3. Copy (no AI slop)
 
@@ -110,6 +114,11 @@ Airbnb-level polish — NOT a gradient-header SaaS dashboard.
 - 3G manners: no full-res assets for thumbnails, skeletons instead of spinners
   on long fetches, offline drop mid-flow → retryable `ErrorState`/`Banner`,
   never a crash or infinite spin.
+- Times are clinic-local, not device-local: slot chips, day grouping, and
+  confirm/success summaries render in the clinic timezone (`Africa/Douala` —
+  fixed offset, no DST) via a shared `Intl` formatter with an explicit
+  `timeZone`; the core persona books across timezones for dependents back
+  home, and a Paris device must never see Douala appointments in Paris time.
 - Gestures/sheets: dismissal always available (back gesture included); no
   modal-on-modal-on-modal; keyboard never covers the focused input; return-key
   type matches the next action.

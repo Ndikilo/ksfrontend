@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { searchService } from '@/api';
 import { Avatar, Badge, Button, Card, Divider, Screen, Spinner, Text } from '@/components/ui';
-import { professionIcon } from '@/constants';
+import { CONSULTATION_TYPE_KEYS, professionIcon } from '@/constants';
 import { useAsync } from '@/hooks';
 import { useTheme } from '@/theme';
 import type { ConsultationType } from '@/types';
@@ -56,7 +56,9 @@ export default function PractitionerDetailScreen() {
   const offerings = data.offerings.filter((offering) => offering.active);
 
   const consultationLabel = (type: ConsultationType) =>
-    t(`search.${type === 'in_person' ? 'inPerson' : type}`);
+    // Typed type→key map — a new ConsultationType without a key is a compile
+    // error, so raw keys can never reach the UI (P4.T1 A1 bug class).
+    t(`search.${CONSULTATION_TYPE_KEYS[type]}`);
 
   return (
     <Screen contentStyle={{ gap: theme.spacing.md }}>

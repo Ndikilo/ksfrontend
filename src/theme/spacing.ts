@@ -23,5 +23,7 @@ export type SpacingKey = keyof typeof spacing;
 export const layout = {
   screenPadding: spacing.xl, // 24 — matches the generous side margins in the designs
   hitSlop: { top: 8, bottom: 8, left: 8, right: 8 },
+  /** Minimum interactive target (design standard §1). */
+  minTouchTarget: 48,
   maxContentWidth: 640,
 } as const;

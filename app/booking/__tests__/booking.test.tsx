@@ -66,11 +66,21 @@ const OTHER_DAY_SLOT: PublicSlot = {
   startsAt: '2026-06-11T08:00:00.000Z',
   endsAt: '2026-06-11T09:00:00.000Z',
 };
+/** 23:30 UTC is already 00:30 the NEXT day in the clinic zone (Africa/Douala). */
+const LATE_NIGHT_SLOT: PublicSlot = {
+  ...SLOT,
+  key: 'rule:r1:2026-06-10T23:30:00.000Z',
+  startsAt: '2026-06-10T23:30:00.000Z',
+  endsAt: '2026-06-10T23:59:00.000Z',
+  consultationTypes: ['home_visit'],
+};
 
 const PRACTITIONER = {
   prefix: 'Dr',
   givenNames: 'Amara',
   surname: 'Diallo',
+  cancellationNoticeHours: 24,
+  cancellationFeeXaf: 0,
   offerings: [
     { id: 'off-1', consultationType: 'in_person', durationMin: 60, priceXaf: 5000, active: true },
     { id: 'off-2', consultationType: 'video', durationMin: 30, priceXaf: 2500, active: true },
@@ -140,17 +150,19 @@ describe('BookingScreen (P4.T1)', () => {
     expect(screen.getByTestId(`booking-day-2026-06-11`)).toBeTruthy();
   });
 
-  it('picker → confirm → success, with interpolated policy copy and no raw braces', async () => {
+  it('picker → confirm → success, with the practitioner’s real policy before committing', async () => {
     const screen = renderScreen();
     fireEvent.press(await screen.findByTestId(`booking-slot-${SLOT.key}`));
     fireEvent.press(screen.getByText('Next'));
 
-    // Confirm step: who + offering + policy notice, offering filtered to the slot.
+    // Confirm step: who + offering + REAL policy numbers (no "shown once you
+    // book" hedge), offering filtered to the slot.
     expect(await screen.findByText(/Who is this appointment for/)).toBeTruthy();
     expect(screen.getByText('Myself')).toBeTruthy();
     expect(screen.getByText('In person')).toBeTruthy();
     expect(screen.queryByText('Video')).toBeNull();
-    expect(screen.getByText(/notice window without a fee/)).toBeTruthy();
+    expect(screen.getByText('Free cancellation up to 24 h before the start.')).toBeTruthy();
+    expect(screen.queryByText(/once you book/)).toBeNull();
     expect(screen.queryByText(/{{/)).toBeNull();
 
     fireEvent.press(screen.getByText('Confirm booking'));
@@ -161,7 +173,26 @@ describe('BookingScreen (P4.T1)', () => {
     expect(screen.queryByText(SLOT_TAKEN.message)).toBeNull();
   });
 
-  it('a taken slot keeps the user on confirm with the localized reason and a way back', async () => {
+  it('BLOCKER A1: renders home-visit offerings with a real label, never the raw i18n key', async () => {
+    mockPractitioner.mockResolvedValue({
+      ...PRACTITIONER,
+      offerings: [
+        { id: 'off-3', consultationType: 'home_visit', durationMin: 60, priceXaf: 7000, active: true },
+      ],
+    } as unknown as PractitionerDetail);
+    mockOpenSlots.mockResolvedValue({
+      data: [LATE_NIGHT_SLOT],
+      meta: { count: 1, from: LATE_NIGHT_SLOT.startsAt, to: LATE_NIGHT_SLOT.endsAt },
+    });
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByTestId(`booking-slot-${LATE_NIGHT_SLOT.key}`));
+    fireEvent.press(screen.getByText('Next'));
+
+    expect(await screen.findByText('Home visit')).toBeTruthy();
+    expect(screen.queryByText('search.home_visit')).toBeNull();
+  });
+
+  it('a taken slot clears the dead selection and refetches times on the way back', async () => {
     mockBook.mockRejectedValue(SLOT_TAKEN);
     const screen = renderScreen();
     fireEvent.press(await screen.findByTestId(`booking-slot-${SLOT.key}`));
@@ -169,9 +200,10 @@ describe('BookingScreen (P4.T1)', () => {
     fireEvent.press(await screen.findByText('Confirm booking'));
 
     expect(await screen.findByText(SLOT_TAKEN.message)).toBeTruthy();
-    // Recovery: back to the times, error cleared.
+    // Recovery: back to the times, error cleared, dead slot gone, slots refetched.
     fireEvent.press(screen.getByText('Back to times'));
     expect(await screen.findByTestId(`booking-slot-${SLOT.key}`)).toBeTruthy();
+    expect(mockOpenSlots).toHaveBeenCalledTimes(2); // initial load + recovery refetch
   });
 
   it('offers booking for a managed dependent', async () => {
@@ -190,7 +222,7 @@ describe('BookingScreen (P4.T1)', () => {
     });
   });
 
-  it('shows the empty state when no slot is open, with a retry', async () => {
+  it('shows the empty state when no slot is open, with a real next action', async () => {
     mockOpenSlots.mockResolvedValue({
       data: [],
       meta: { count: 0, from: SLOT.startsAt, to: SLOT.endsAt },
@@ -198,7 +230,7 @@ describe('BookingScreen (P4.T1)', () => {
     const screen = renderScreen();
     expect(await screen.findByText('No open slots')).toBeTruthy();
     expect(screen.getByText(/no bookable times in the next two weeks/)).toBeTruthy();
-    expect(screen.getByText('Try again')).toBeTruthy();
+    expect(screen.getByText('Refresh times')).toBeTruthy();
   });
 
   it('shows an error state with retry when the practitioner fails to load', async () => {
@@ -208,20 +240,31 @@ describe('BookingScreen (P4.T1)', () => {
     expect(screen.getByText('Try again')).toBeTruthy();
   });
 
-  it('asks signed-out users to sign in before booking', async () => {
+  it('asks signed-out users to sign in, carrying a redirect back to the flow (A2)', async () => {
     mockSession.value = null;
     const screen = renderScreen();
     expect(await screen.findByText('Sign in to book an appointment.')).toBeTruthy();
     fireEvent.press(screen.getByText('Sign in'));
-    expect(mockPush).toHaveBeenCalledWith('/(auth)/login');
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/(auth)/login',
+      params: { redirect: '/booking/prac-1' },
+    });
     expect(mockOpenSlots).not.toHaveBeenCalled();
   });
 
   describe('groupSlotsByDay (pure)', () => {
-    it('groups by local calendar day, soonest first, keeping slot order within a day', () => {
+    it('groups by CLINIC-local calendar day (Africa/Douala), soonest first', () => {
       const days = groupSlotsByDay([OTHER_DAY_SLOT, SLOT]);
       expect(days.map((day) => day.key)).toEqual(['2026-06-10', '2026-06-11']);
       expect(days[0]?.slots.map((slot) => slot.key)).toEqual([SLOT.key]);
+    });
+
+    it('rolls a late-UTC slot over to the next Douala day — never slices the UTC date', () => {
+      // 2026-06-10T23:30Z is 2026-06-11 00:30 in Douala: it must land on the
+      // 11th, not the UTC date "10" (the device-timezone/UTC-slice bug class).
+      const days = groupSlotsByDay([SLOT, LATE_NIGHT_SLOT]);
+      expect(days.map((day) => day.key)).toEqual(['2026-06-10', '2026-06-11']);
+      expect(days[1]?.slots.map((slot) => slot.key)).toEqual([LATE_NIGHT_SLOT.key]);
     });
   });
 });
@@ -234,13 +277,14 @@ describe('SuccessStep (P4.T1)', () => {
       </ThemeProvider>,
     );
 
-  it('shows the summary and the FEE branch of the policy snapshot, interpolated', () => {
+  it('shows the summary and the FEE branch of the policy snapshot, deterministic wording', () => {
     const screen = renderSuccess(BOOKED);
     expect(screen.getByText('Appointment booked')).toBeTruthy();
     expect(screen.getByText(/Dr Amara Diallo — /)).toBeTruthy();
     expect(screen.getByText('5,000 XAF')).toBeTruthy();
-    expect(screen.getByText(/up to 24 h before the start/)).toBeTruthy();
-    expect(screen.getByText(/2,500 XAF/)).toBeTruthy();
+    expect(screen.getByText(/Free cancellation up to 24 h before the start/)).toBeTruthy();
+    expect(screen.getByText(/are charged 2,500 XAF/)).toBeTruthy();
+    expect(screen.queryByText(/may be charged/)).toBeNull(); // B1: no hedge
     expect(screen.queryByText(/{{/)).toBeNull();
     fireEvent.press(screen.getByText('Done'));
     expect(mockReplace).toHaveBeenCalled();
@@ -248,8 +292,8 @@ describe('SuccessStep (P4.T1)', () => {
 
   it('uses the free-cancellation copy when the snapshot fee is zero', () => {
     const screen = renderSuccess({ ...BOOKED, cancellationFeeXaf: 0 });
-    expect(screen.getByText(/up to 24 h before the start/)).toBeTruthy();
-    expect(screen.queryByText(/XAF fee/)).toBeNull();
+    expect(screen.getByText(/Free cancellation up to 24 h before the start/)).toBeTruthy();
+    expect(screen.queryByText(/charged/)).toBeNull();
     expect(screen.queryByText(/{{/)).toBeNull();
   });
 });

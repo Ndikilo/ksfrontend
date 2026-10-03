@@ -25,6 +25,8 @@ export default function VerifyOtpScreen() {
     identifier: string;
     maskedTarget: string;
     expiresIn?: string;
+    /** In-app path to return to after the flow signs the user in (A2 hop). */
+    redirect?: string;
   }>();
   const purpose = params.purpose ?? 'register';
   const expiresIn = Number(params.expiresIn ?? 120);

@@ -25,6 +25,8 @@ type UseMutationResult<T, V> = MutationState<T> & {
  * Imperative counterpart to `useAsync` for actions the user triggers
  * (login, save, delete). Tracks loading/error and fires success/error
  * callbacks — perfect for wiring a submit button to a service function.
+ * A re-entrancy guard makes a fast double-tap fire exactly ONE request
+ * (the Button's `disabled` only lands after a re-render — too slow on 3G).
  *
  *   const { mutate, isLoading, error } = useMutation(authService.login, {
  *     onSuccess: (session) => signIn(session),
@@ -49,8 +51,14 @@ export function useMutation<T, V = void>(
     };
   }, []);
 
+  // Synchronous in-flight marker: setState is async, so `isLoading` alone
+  // can't stop a double-tap that lands within the same frame.
+  const isLoadingRef = useRef(false);
+
   const mutate = useCallback(
     async (variables: V): Promise<T | null> => {
+      if (isLoadingRef.current) return null;
+      isLoadingRef.current = true;
       setState({ data: null, error: null, isLoading: true });
       try {
         const data = await mutationFn(variables);
@@ -64,15 +72,17 @@ export function useMutation<T, V = void>(
         if (isMounted.current) setState({ data: null, error, isLoading: false });
         options.onError?.(error, variables);
         return null;
+      } finally {
+        isLoadingRef.current = false;
       }
     },
     [mutationFn, options],
   );
 
-  const reset = useCallback(
-    () => setState({ data: null, error: null, isLoading: false }),
-    [],
-  );
+  const reset = useCallback(() => {
+    isLoadingRef.current = false;
+    setState({ data: null, error: null, isLoading: false });
+  }, []);
 
   return { ...state, mutate, reset };
 }

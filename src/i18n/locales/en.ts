@@ -16,6 +16,7 @@ export const en = {
     goBack: 'Go back',
     required: 'Required',
     retry: 'Try again',
+    loading: 'Loading…',
   },
 
   validation: {
@@ -179,23 +180,32 @@ export const en = {
     slotsEmptyTitle: 'No open slots',
     slotsEmptyMessage:
       '{{name}} has no bookable times in the next two weeks. Please check back soon.',
+    slotsEmptyAction: 'Refresh times',
     confirmTitle: 'Confirm your booking',
     whoLabel: 'Who is this appointment for?',
     forMyself: 'Myself',
     offeringLabel: 'Consultation',
     whenLabel: 'When',
     withLabel: 'With',
-    policyNotice:
-      'You can cancel before the practitioner’s notice window without a fee. The exact policy is shown once you book.',
+    // Real numbers from the practitioner's public policy (Review 005 A5):
+    // the terms are known BEFORE the booking is committed, in full sentences.
+    confirmPolicyFree: 'Free cancellation up to {{hours}} h before the start.',
+    confirmPolicyFee:
+      'Free cancellation up to {{hours}} h before the start. Later cancellations are charged {{fee}} XAF.',
+    noOfferingMatch:
+      'This time doesn’t match any of this practitioner’s consultation options. Please pick another time.',
     next: 'Next',
     confirm: 'Confirm booking',
     backToSlots: 'Back to times',
     successTitle: 'Appointment booked',
-    successWhen: '{{when}}',
-    successPolicyFree: 'You can cancel free of charge up to {{hours}} h before the start.',
+    successPolicyFree: 'Free cancellation up to {{hours}} h before the start.',
     successPolicyFee:
-      'You can cancel free of charge up to {{hours}} h before the start; later cancellations may be charged {{fee}} XAF.',
+      'Free cancellation up to {{hours}} h before the start. Later cancellations are charged {{fee}} XAF.',
     done: 'Done',
+    // Slot-chip announcements for screen readers: time + type + state.
+    chipSelected: 'selected',
+    chipNotSelected: 'not selected',
+    slotChipLabel: '{{time}}, {{types}} — {{state}}',
   },
 
   home: {
