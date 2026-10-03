@@ -33,6 +33,25 @@ function required(value: string | undefined, name: string): string {
 const configuredBaseUrl = required(extra.apiBaseUrl, 'apiBaseUrl');
 
 /**
+ * Release guard: mock authentication may only ever run in dev builds. A store
+ * build with `mockAuth: true` in its config IGNORES the flag (forced off) and
+ * errors loudly — shipping a fake-auth app must fail visibly, not silently.
+ * (Unit test lands with the P2.T4 test runner.)
+ */
+function guardMockAuth(value: boolean): boolean {
+  if (!value) {
+    return false;
+  }
+  if (__DEV__) {
+    return true;
+  }
+  console.error(
+    '[env] mockAuth=true in a release build is ignored — mock authentication is dev-only.',
+  );
+  return false;
+}
+
+/**
  * The Android emulator cannot reach the host machine via `localhost` — the
  * conventional alias is `10.0.2.2`. Rewrite it so the same `app.json` works on
  * every platform (physical Android devices need the host's LAN IP instead).
@@ -50,6 +69,7 @@ export const env = {
   /**
    * When true, the auth service returns local mock responses instead of hitting
    * the network. Off by default — the real backend is the source of truth.
+   * Dev-only: forced off (with a loud error) in release builds by guardMockAuth.
    */
-  mockAuth: extra.mockAuth ?? false,
+  mockAuth: guardMockAuth(extra.mockAuth ?? false),
 } as const;
