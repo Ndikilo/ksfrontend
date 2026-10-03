@@ -15,11 +15,13 @@ is the committed twin — keep them identical.
   `colors.border / borderStrong`, `colors.danger / success / warning / info` (+
   their `*Surface` tints). Raw `palette.*` is for `src/theme` only. Status
   colors mean exactly one thing each; brand blue is for CTAs and key accents,
-  never washes. Contrast is part of the token contract: status-colored copy on
-  its `*Surface` tint must pass WCAG AA (4.5:1 text, 3:1 icons) in BOTH themes
-  — where it doesn't (amber on amber100 in light mode fails at ~1.9:1), keep
-  the status color for icon/border and set the copy in `colors.text`, or add a
-  darker `*Text` token in `src/theme`.
+  never washes. Contrast is part of the token contract: status-colored copy —
+  on its `*Surface` tint or on any plain surface — must pass WCAG AA (4.5:1
+  text, 3:1 icons) in BOTH themes. Where it doesn't (amber on amber100 in
+  light mode fails at ~1.9:1; red500 on white is only 3.9:1), keep the status
+  color for icon/border and set the copy in `colors.text`, or add a `*Text`
+  token in `src/theme` — darker than the status color in light mode, lighter
+  in dark mode (dark danger/info on their tints also fail at 3.9/3.2:1).
 - Spacing: the 4pt scale `spacing.none…huge` (`xxs`=2, `xs`=4, `sm`=8, `md`=12,
   `lg`=16, `xl`=24, `xxl`=32, `xxxl`=48, `huge`=64) and `layout.screenPadding`
   (24) / `layout.hitSlop` / `layout.maxContentWidth` (640) — no magic numbers.
