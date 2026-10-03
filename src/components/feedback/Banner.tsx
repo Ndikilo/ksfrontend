@@ -48,7 +48,9 @@ function toneColors(colors: ColorScheme, tone: Tone) {
     case 'error':
       return { bg: colors.dangerSurface, fg: colors.danger, border: colors.danger };
     case 'warning':
-      return { bg: colors.warningSurface, fg: colors.warning, border: colors.warning };
+      // Copy/icon in the copy-safe token: light-mode amber-on-amber fails
+      // AA (≈1.9:1). The border keeps the status color for the accent line.
+      return { bg: colors.warningSurface, fg: colors.warningText, border: colors.warning };
     default:
       return { bg: colors.infoSurface, fg: colors.info, border: colors.info };
   }

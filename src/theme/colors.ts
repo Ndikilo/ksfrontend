@@ -47,6 +47,7 @@ export const palette = {
   green100: '#E7F6EC',
   amber500: '#E5A50A',
   amber100: '#FCF3DC',
+  amber900: '#7A5200', // darkened amber — AA legible as copy on amber100 in light mode
   blue500: '#2F6FE5',
   blue100: '#E4EDFD',
 } as const;
@@ -84,6 +85,9 @@ export type ColorScheme = {
   successSurface: string;
   warning: string;
   warningSurface: string;
+  /** Copy-safe warning: WCAG AA (4.5:1) on `warningSurface` in BOTH themes —
+   *  use for text on the warning tint; `warning` stays for icon/border. */
+  warningText: string;
   info: string;
   infoSurface: string;
 };
@@ -111,6 +115,8 @@ export const lightColors: ColorScheme = {
   successSurface: palette.green100,
   warning: palette.amber500,
   warningSurface: palette.amber100,
+  // amber500 on amber100 is ~1.9:1 — copy needs the darkened amber (≈6.3:1).
+  warningText: palette.amber900,
   info: palette.blue500,
   infoSurface: palette.blue100,
 };
@@ -138,6 +144,8 @@ export const darkColors: ColorScheme = {
   successSurface: '#16301F',
   warning: palette.amber500,
   warningSurface: '#33290C',
+  // Dark surface is near-black: the regular amber already reads at ≈6.6:1.
+  warningText: palette.amber500,
   info: palette.blue500,
   infoSurface: '#152744',
 };

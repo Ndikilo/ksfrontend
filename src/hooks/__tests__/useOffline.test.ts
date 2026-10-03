@@ -18,6 +18,8 @@ jest.mock('@react-native-community/netinfo', () => ({
   },
 }));
 
+const lastEmit = () => mockListeners[mockListeners.length - 1];
+
 describe('useOffline — the connectivity hook', () => {
   beforeEach(() => {
     resetNetState();
@@ -31,37 +33,50 @@ describe('useOffline — the connectivity hook', () => {
 
   it('flips to offline when the device disconnects, back on reconnect', () => {
     const { result } = renderHook(() => useOffline());
-    expect(mockListeners.length).toBeGreaterThan(0);
-    const emit = mockListeners[mockListeners.length - 1];
+    expect(mockListeners).toHaveLength(1); // rides the ONE shared subscription
 
-    act(() => emit({ isConnected: false, isInternetReachable: null }));
+    act(() => lastEmit()({ isConnected: false, isInternetReachable: null }));
     expect(result.current).toBe(true);
 
-    act(() => emit({ isConnected: true, isInternetReachable: true }));
+    act(() => lastEmit()({ isConnected: true, isInternetReachable: true }));
     expect(result.current).toBe(false);
   });
 
   it('treats connected-but-no-internet (captive portal) as offline', () => {
     const { result } = renderHook(() => useOffline());
-    const emit = mockListeners[mockListeners.length - 1];
 
-    act(() => emit({ isConnected: true, isInternetReachable: false }));
+    act(() => lastEmit()({ isConnected: true, isInternetReachable: false }));
     expect(result.current).toBe(true);
   });
 
   it('keeps feeding the synchronous netState snapshot for the http client', () => {
     renderHook(() => useOffline());
 
-    // The hook calls startNetState() → netState holds its own subscription and
-    // receives the same NetInfo event as the hook's listener.
-    act(() => mockListeners.forEach((emit) => emit({ isConnected: false, isInternetReachable: false })));
+    act(() => lastEmit()({ isConnected: false, isInternetReachable: false }));
     expect(isOnline()).toBe(false);
   });
 
-  it('unsubscribes on unmount', () => {
-    const { unmount } = renderHook(() => useOffline());
-    const listenersBefore = mockListeners.length;
-    unmount();
-    expect(mockListeners.length).toBe(listenersBefore - 1);
+  it('seeds from the snapshot when mounted mid-offline (not the optimistic default)', () => {
+    const first = renderHook(() => useOffline());
+    act(() => lastEmit()({ isConnected: false, isInternetReachable: null }));
+    expect(first.result.current).toBe(true);
+    first.unmount();
+
+    // Fresh mount while the device is still offline: show the banner at once.
+    const second = renderHook(() => useOffline());
+    expect(second.result.current).toBe(true);
+  });
+
+  it('shares one NetInfo subscription across consumers; it outlives unmount', () => {
+    const a = renderHook(() => useOffline());
+    const b = renderHook(() => useOffline());
+    expect(mockListeners).toHaveLength(1);
+
+    a.unmount();
+    b.unmount();
+    // Deliberately kept alive — the http client reads the snapshot on failures.
+    expect(mockListeners).toHaveLength(1);
+    act(() => lastEmit()({ isConnected: true, isInternetReachable: false }));
+    expect(isOnline()).toBe(false);
   });
 });

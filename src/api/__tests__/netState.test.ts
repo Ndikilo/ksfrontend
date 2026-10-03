@@ -1,4 +1,4 @@
-import { isOnlineState, isOnline, resetNetState, startNetState } from '../netState';
+import { isOnlineState, isOnline, resetNetState, subscribeOnline } from '../netState';
 
 // Hoisted factory may only reference `mock`-prefixed variables.
 const mockListeners: ((state: Record<string, unknown>) => void)[] = [];
@@ -41,7 +41,7 @@ describe('netState snapshot (sync read for the http client)', () => {
   });
 
   it('follows connectivity events from the NetInfo subscription', () => {
-    startNetState();
+    const unsubscribe = subscribeOnline(() => {});
     expect(mockListeners).toHaveLength(1);
 
     mockListeners[0]({ isConnected: false, isInternetReachable: null });
@@ -52,17 +52,43 @@ describe('netState snapshot (sync read for the http client)', () => {
 
     mockListeners[0]({ isConnected: true, isInternetReachable: true });
     expect(isOnline()).toBe(true);
+
+    unsubscribe();
   });
 
-  it('subscribes only once (idempotent start)', () => {
-    startNetState();
-    startNetState();
-    startNetState();
+  it('opens exactly ONE NetInfo subscription no matter how many listeners attach', () => {
+    const unsub1 = subscribeOnline(() => {});
+    const unsub2 = subscribeOnline(() => {});
+    const unsub3 = subscribeOnline(() => {});
     expect(mockListeners).toHaveLength(1);
+    unsub1();
+    unsub2();
+    unsub3();
+  });
+
+  it('notifies every attached listener with the derived online value', () => {
+    const seen: boolean[] = [];
+    const unsubscribe = subscribeOnline((value) => seen.push(value));
+
+    mockListeners[0]({ isConnected: false, isInternetReachable: null });
+    mockListeners[0]({ isConnected: true, isInternetReachable: true });
+
+    expect(seen).toEqual([false, true]);
+    unsubscribe();
+  });
+
+  it('detaching a listener does NOT tear down the shared subscription', () => {
+    const unsubscribe = subscribeOnline(() => {});
+    unsubscribe();
+    expect(mockUnsubCalls).toBe(0);
+    expect(mockListeners).toHaveLength(1); // kept — the http client snapshot needs it
+
+    mockListeners[0]({ isConnected: false, isInternetReachable: false });
+    expect(isOnline()).toBe(false);
   });
 
   it('resetNetState unsubscribes and restores the optimistic default', () => {
-    startNetState();
+    subscribeOnline(() => {});
     mockListeners[0]({ isConnected: false, isInternetReachable: null });
     expect(isOnline()).toBe(false);
 
