@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 
+import { OfflineBanner } from '@/components/feedback';
 import { useUpdateCheck } from '@/hooks';
 import { AppProviders } from '@/providers/AppProviders';
 import { useTheme } from '@/theme';
@@ -36,6 +37,7 @@ function RootNavigator() {
   return (
     <>
       <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
+      <OfflineBanner />
       <Stack
         screenOptions={{
           headerShown: false,

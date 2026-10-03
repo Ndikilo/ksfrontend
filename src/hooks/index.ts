@@ -5,3 +5,4 @@ export { useToggle } from './useToggle';
 export { useCarousel } from './useCarousel';
 export { useCountdown, formatMMSS } from './useCountdown';
 export { useUpdateCheck } from './useUpdateCheck';
+export { useOffline } from './useOffline';

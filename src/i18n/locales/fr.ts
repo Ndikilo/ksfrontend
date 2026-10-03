@@ -191,6 +191,11 @@ export const fr: Translations = {
     title: "Cet écran n'existe pas.",
     goHome: "Aller à l'accueil",
   },
+
+  offline: {
+    banner: 'Vous êtes hors ligne — la réservation et les paiements nécessitent une connexion.',
+    error: 'Pas de connexion Internet. Vérifiez votre réseau et réessayez.',
+  },
 };
 
 export default fr;

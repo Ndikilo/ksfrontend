@@ -190,6 +190,11 @@ export const en = {
     title: "This screen doesn't exist.",
     goHome: 'Go to home',
   },
+
+  offline: {
+    banner: 'You are offline — booking and payments need a connection.',
+    error: 'No internet connection. Check your network and try again.',
+  },
 } as const;
 
 /** Same nested shape as `en`, but every leaf is a plain `string` — so the

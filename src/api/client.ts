@@ -5,9 +5,11 @@ import axios, {
 } from 'axios';
 
 import { env } from '@/config/env';
+import i18n from '@/i18n';
 import { logger } from '@/utils/logger';
 
 import { normalizeError } from './httpError';
+import { isOnline } from './netState';
 
 /**
  * The single HTTP client for the whole app.
@@ -57,6 +59,12 @@ instance.interceptors.response.use(
   (response) => response,
   (error) => {
     const normalized = normalizeError(error);
+    // Offline at request time: the failure is the connection, not the app —
+    // say so with localized copy instead of the generic network message.
+    if (normalized.status === 0 && error?.response === undefined && !isOnline()) {
+      normalized.message = i18n.t('offline.error');
+      normalized.code = 'OFFLINE';
+    }
     // Central place to react to auth expiry regardless of which call triggered it.
     if (normalized.status === 401 && onUnauthorized) {
       onUnauthorized();
