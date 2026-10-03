@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { appointmentsService } from '@/api';
-import { EmptyState, ErrorState } from '@/components/feedback';
-import { Badge, Chip, Screen, Spinner, Text } from '@/components/ui';
+import { Banner, EmptyState, ErrorState } from '@/components/feedback';
+import { Badge, Button, Chip, Screen, Spinner, Text } from '@/components/ui';
 import { CONSULTATION_TYPE_KEYS } from '@/constants';
 import { useAsync } from '@/hooks';
 import { useTheme } from '@/theme';
@@ -15,14 +15,19 @@ import { formatClinicDate } from '@/utils';
 
 /**
  * Appointments tab (P4.T2): upcoming/past lists replacing the placeholder.
- * Both lists come from the one role-aware listing, split client-side by the
- * clinic clock; the detail route owns cancel/reschedule. Refetches on every
- * focus so a booking/cancellation made elsewhere is reflected immediately.
+ * One role-aware cursor-paginated listing (FlatList + keyset `nextCursor`),
+ * split client-side by the clinic clock; the detail route owns
+ * cancel/reschedule. Refetches on re-focus without discarding visible
+ * content (stale-while-revalidate: the full-screen Spinner is first load
+ * only).
  */
 
 type Segment = 'upcoming' | 'past';
 
 const ACTIVE_STATUSES = new Set(['pending', 'confirmed']);
+
+/** Page size for the backend's keyset cursor — history is never capped. */
+const PAGE_SIZE = 50;
 
 /** Split a booking list into upcoming (future, still active) and past — pure. */
 export const splitAppointments = (
@@ -49,7 +54,43 @@ export default function AppointmentsScreen() {
   const { t } = useTranslation();
   const [segment, setSegment] = useState<Segment>('upcoming');
 
-  const list = useAsync(() => appointmentsService.list({ limit: 100 }), []);
+  // First page via useAsync; later pages accumulate below, driven by the
+  // backend keyset cursor (loading everything in one request would cap
+  // history at the page size — Review 006 MAJOR 1).
+  const list = useAsync(() => appointmentsService.list({ limit: PAGE_SIZE }), []);
+  const [olderPages, setOlderPages] = useState<Appointment[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(false);
+
+  // A fresh first page (mount, focus refetch, retry) resets the accumulation.
+  useEffect(() => {
+    setOlderPages([]);
+    setNextCursor(list.data?.meta.nextCursor ?? null);
+    setLoadMoreError(false);
+  }, [list.data]);
+
+  const loadMore = useCallback(async () => {
+    if (nextCursor === null || isLoadingMore || loadMoreError) return;
+    setIsLoadingMore(true);
+    try {
+      const page = await appointmentsService.list({ limit: PAGE_SIZE, cursor: nextCursor });
+      setOlderPages((prev) => [...prev, ...page.data]);
+      setNextCursor(page.meta.nextCursor);
+    } catch {
+      // Best-effort pagination: the loaded history stays usable; the footer
+      // offers an explicit retry instead of failing the whole screen.
+      setLoadMoreError(true);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [nextCursor, isLoadingMore, loadMoreError]);
+
+  const retryLoadMore = useCallback(() => {
+    setLoadMoreError(false);
+    void loadMore();
+  }, [loadMore]);
+
   // Tabs stay mounted — refetch on every RE-focus so bookings/cancellations
   // made elsewhere show up. The initial focus is skipped: useAsync's mount
   // effect already fired, and two identical GETs is a wasted 3G request.
@@ -62,23 +103,26 @@ export default function AppointmentsScreen() {
     }, [refetchList]),
   );
 
-  const { upcoming, past } = useMemo(
-    () => splitAppointments(list.data?.data ?? [], Date.now()),
-    [list.data],
+  const all = useMemo(
+    () => (list.data ? [...list.data.data, ...olderPages] : []),
+    [list.data, olderPages],
   );
+  const { upcoming, past } = useMemo(() => splitAppointments(all, Date.now()), [all]);
   const shown = segment === 'upcoming' ? upcoming : past;
 
-  if (list.isLoading) {
+  // Stale-while-revalidate (Review 006 MAJOR 2): a refocus refetch must keep
+  // the list mounted — the full-screen Spinner is the FIRST load only.
+  if (list.isLoading && list.data === null) {
     return (
       <Screen>
-        <View style={styles.centered}>
+        <View testID="appointments-spinner" style={styles.centered}>
           <Spinner />
         </View>
       </Screen>
     );
   }
 
-  if (list.error) {
+  if (list.error && list.data === null) {
     return (
       <Screen contentStyle={{ gap: theme.spacing.md }}>
         <Text variant="title">{t('appointments.title')}</Text>
@@ -87,8 +131,27 @@ export default function AppointmentsScreen() {
     );
   }
 
+  const emptyState =
+    segment === 'upcoming' ? (
+      <EmptyState
+        icon={<Ionicons name="calendar-outline" size={48} color={theme.colors.textMuted} />}
+        title={t('appointments.upcomingEmptyTitle')}
+        message={t('appointments.upcomingEmptyMessage')}
+        actionLabel={t('appointments.upcomingEmptyAction')}
+        onAction={() => router.push('/search')}
+      />
+    ) : (
+      <EmptyState
+        icon={<Ionicons name="time-outline" size={48} color={theme.colors.textMuted} />}
+        title={t('appointments.pastEmptyTitle')}
+        message={t('appointments.pastEmptyMessage')}
+      />
+    );
+
   return (
-    <Screen contentStyle={{ gap: theme.spacing.lg }}>
+    // Not a ScrollView screen: the FlatList owns scrolling so virtualization
+    // and onEndReached work (history is unbounded).
+    <Screen scroll={false} contentStyle={{ gap: theme.spacing.lg }}>
       <Text variant="title">{t('appointments.title')}</Text>
 
       <View style={styles.segments}>
@@ -108,46 +171,48 @@ export default function AppointmentsScreen() {
         />
       </View>
 
-      {shown.length === 0 ? (
-        segment === 'upcoming' ? (
-          <EmptyState
-            icon={<Ionicons name="calendar-outline" size={48} color={theme.colors.textMuted} />}
-            title={t('appointments.upcomingEmptyTitle')}
-            message={t('appointments.upcomingEmptyMessage')}
-            actionLabel={t('appointments.upcomingEmptyAction')}
-            onAction={() => router.push('/search')}
-          />
-        ) : (
-          <EmptyState
-            icon={<Ionicons name="time-outline" size={48} color={theme.colors.textMuted} />}
-            title={t('appointments.pastEmptyTitle')}
-            message={t('appointments.pastEmptyMessage')}
-          />
-        )
-      ) : (
-        <View style={styles.list}>
-          {shown.map((appointment) => (
-            <AppointmentRow key={appointment.id} appointment={appointment} />
-          ))}
-        </View>
-      )}
+      {list.error ? <Banner message={list.error.message} tone="error" /> : null}
+
+      <FlatList
+        style={styles.listFlex}
+        data={shown}
+        keyExtractor={(appointment) => appointment.id}
+        renderItem={({ item }) => <AppointmentRow appointment={item} />}
+        ListEmptyComponent={emptyState}
+        ListFooterComponent={
+          isLoadingMore ? (
+            <View style={styles.footer}>
+              <Spinner />
+            </View>
+          ) : loadMoreError ? (
+            <Button title={t('common.retry')} variant="outline" onPress={retryLoadMore} />
+          ) : null
+        }
+        onEndReached={nextCursor !== null ? () => void loadMore() : undefined}
+        onEndReachedThreshold={0.25}
+        contentContainerStyle={shown.length === 0 ? { flexGrow: 1 } : styles.list}
+        showsVerticalScrollIndicator={false}
+      />
     </Screen>
   );
 }
 
-function AppointmentRow({ appointment }: { appointment: Appointment }) {
+/** A practitioner row in the appointments list — memoized (FlatList rows). */
+const AppointmentRow = memo(function AppointmentRow({ appointment }: { appointment: Appointment }) {
   const theme = useTheme();
   const { t } = useTranslation();
   const status = statusPresentation(appointment.status);
+  const type = t(`search.${CONSULTATION_TYPE_KEYS[appointment.consultationType]}`);
+  // Row density: `medium` reads better than `full` at this size, especially
+  // with French expansion (Review 006 minor).
+  const when = formatClinicDate(appointment.startsAt, { dateStyle: 'medium', timeStyle: 'short' });
 
   return (
     <Pressable
       testID={`appointment-row-${appointment.id}`}
       accessibilityRole="button"
-      accessibilityLabel={`${formatClinicDate(appointment.startsAt, {
-        dateStyle: 'full',
-        timeStyle: 'short',
-      })}, ${t(`appointments.${status.key}`)}`}
+      // Type + when + price + state — not just the date (Review 006 minor).
+      accessibilityLabel={`${type}, ${when}, ${appointment.priceXaf.toLocaleString()} XAF, ${t(`appointments.${status.key}`)}`}
       onPress={() => router.push(`/appointments/${appointment.id}`)}
       style={({ pressed }) => [
         styles.row,
@@ -160,11 +225,9 @@ function AppointmentRow({ appointment }: { appointment: Appointment }) {
       ]}
     >
       <View style={styles.rowMain}>
-        <Text variant="bodyStrong">
-          {t(`search.${CONSULTATION_TYPE_KEYS[appointment.consultationType]}`)}
-        </Text>
+        <Text variant="bodyStrong">{type}</Text>
         <Text variant="body" color="textMuted">
-          {formatClinicDate(appointment.startsAt, { dateStyle: 'full', timeStyle: 'short' })}
+          {when}
         </Text>
         <Text variant="caption" color="textMuted">
           {appointment.priceXaf.toLocaleString()} XAF
@@ -173,7 +236,7 @@ function AppointmentRow({ appointment }: { appointment: Appointment }) {
       <Badge label={t(`appointments.${status.key}`)} tone={status.tone} />
     </Pressable>
   );
-}
+});
 
 /** Maps the lifecycle status to a localized label key + badge tone. */
 export const statusPresentation = (
@@ -197,7 +260,9 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   segments: { flexDirection: 'row', gap: 8 },
   segment: { flex: 1 },
-  list: { gap: 12 },
+  list: { gap: 12, paddingBottom: 24, flexGrow: 1 },
+  listFlex: { flex: 1 },
+  footer: { alignItems: 'center', paddingVertical: 16 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

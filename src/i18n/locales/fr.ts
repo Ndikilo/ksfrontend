@@ -153,16 +153,24 @@ export const fr: Translations = {
     cancelConfirmTitle: 'Annuler ce rendez-vous ?',
     cancelConfirmLate:
       'Le délai de préavis est de {{hours}} h — annuler maintenant constitue une annulation tardive et des frais de {{fee}} XAF s’appliquent.',
+    // Réservations sans frais : l’annulation est toujours gratuite (termes
+    // d’annulation, pas la formulation générale de la politique de réservation).
+    cancelConfirmFree:
+      'Vous pouvez annuler gratuitement — aucun frais d’annulation ne s’applique à ce rendez-vous.',
     cancelConfirm: 'Oui, annuler',
     cancelKeep: 'Garder le rendez-vous',
     cancelledBanner: 'Ce rendez-vous a été annulé.',
+    // Fidèle à la capacité actuelle : le statut change DANS l’application (pas
+    // encore de notification — elle arrivera avec P6).
     pendingBanner:
-      'Le praticien n’a pas encore confirmé ce rendez-vous — nous vous préviendrons dès que ce sera fait.',
+      'Le praticien n’a pas encore confirmé ce rendez-vous — il apparaîtra comme confirmé ici dès que ce sera fait.',
     lateCancelBanner:
       'Annulé dans le délai de {{hours}} h — des frais de {{fee}} XAF s’appliquent.',
     rescheduleTitle: 'Choisissez un nouvel horaire',
     rescheduleConfirm: 'Confirmer le nouvel horaire',
+    rescheduleKeepCurrent: 'Garder l’horaire actuel',
     rescheduleEmpty: 'Aucun créneau libre dans les deux prochaines semaines.',
+    rescheduleEmptyAction: 'Actualiser les horaires',
     rescheduledBanner: 'Votre rendez-vous a été déplacé.',
     priceLabel: 'Prix',
   },

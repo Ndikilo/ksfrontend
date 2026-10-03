@@ -101,19 +101,39 @@ describe('AppointmentDetailScreen (P4.T2)', () => {
     expect(screen.getByTestId('appointment-status-confirmed')).toBeTruthy();
   });
 
-  it('cancel asks for confirmation (with the free-cancel terms) before calling the API', async () => {
+  it('cancel asks for confirmation (with the free terms) before calling the API', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     const screen = renderScreen();
     fireEvent.press(await screen.findByText('Cancel appointment'));
 
     expect(alertSpy).toHaveBeenCalledTimes(1);
     const [, message, buttons] = alertSpy.mock.calls[0];
-    expect(message).toContain('Free cancellation up to 24 h');
+    // On-time with a fee: the fee never triggers, so the dialog speaks in
+    // CANCEL terms (not the general booking-policy wording).
+    expect(message).toContain('You can cancel free of charge');
     expect(mockCancel).not.toHaveBeenCalled();
 
     const destructive = buttons?.find((button) => button?.text === 'Yes, cancel');
     destructive?.onPress?.();
     await waitFor(() => expect(mockCancel).toHaveBeenCalledWith('apt-1'));
+    alertSpy.mockRestore();
+  });
+
+  it('a fee-0 late cancellation also cancels free of charge (no fee theater)', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    mockGet.mockResolvedValue({
+      ...APPOINTMENT,
+      cancellationFeeXaf: 0,
+      startsAt: new Date(Date.now() + 3_600_000).toISOString(),
+    });
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByText('Cancel appointment'));
+
+    const [, message] = alertSpy.mock.calls[0];
+    expect(message).toContain('You can cancel free of charge');
+    // Neither late-cancel phrase leaks into the fee-0 dialog.
+    expect(message).not.toContain('late cancellation');
+    expect(message).not.toContain('XAF fee applies');
     alertSpy.mockRestore();
   });
 
@@ -147,6 +167,33 @@ describe('AppointmentDetailScreen (P4.T2)', () => {
     expect(screen.queryByText('Reschedule')).toBeNull();
   });
 
+  it('a late cancellation under a 0-fee policy shows no fee banner', async () => {
+    mockGet.mockResolvedValue({
+      ...APPOINTMENT,
+      status: 'cancelled',
+      cancelledAt: '2029-12-14T10:00:00.000Z',
+      cancellationFeeXaf: 0,
+      lateCancellation: true,
+    });
+    const screen = renderScreen();
+    expect(await screen.findByText('This appointment was cancelled.')).toBeTruthy();
+    // "the 0 XAF fee applies" is money-copy nonsense — the banner is gated.
+    expect(screen.queryByText(/fee applies/)).toBeNull();
+  });
+
+  it('started appointments hide Cancel and Reschedule (the backend rejects them)', async () => {
+    mockGet.mockResolvedValue({
+      ...APPOINTMENT,
+      // Started 1 h ago, still confirmed.
+      startsAt: new Date(Date.now() - 3_600_000).toISOString(),
+      endsAt: new Date(Date.now() + 3_600_000).toISOString(),
+    });
+    const screen = renderScreen();
+    expect(await screen.findByTestId('appointment-status-confirmed')).toBeTruthy();
+    expect(screen.queryByText('Cancel appointment')).toBeNull();
+    expect(screen.queryByText('Reschedule')).toBeNull();
+  });
+
   it('reschedule: opens the slot picker, picks a slot and confirms the move', async () => {
     mockReschedule.mockResolvedValue({ ...APPOINTMENT, slotId: 'slot-2' });
     const screen = renderScreen();
@@ -164,18 +211,79 @@ describe('AppointmentDetailScreen (P4.T2)', () => {
     expect(await screen.findByText('Your appointment has been moved.')).toBeTruthy();
   });
 
+  it('reschedule slot chips announce time + type + state to screen readers', async () => {
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByText('Reschedule'));
+
+    const chip = await screen.findByTestId(`reschedule-slot-${SLOT.key}`);
+    expect(chip.props.accessibilityLabel).toContain('In person');
+    expect(chip.props.accessibilityLabel).toContain('not selected');
+    fireEvent.press(chip);
+    expect(
+      screen.getByTestId(`reschedule-slot-${SLOT.key}`).props.accessibilityLabel,
+    ).toContain('selected');
+  });
+
+  it('reschedule: "Keep current time" closes the picker without moving', async () => {
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByText('Reschedule'));
+
+    expect(await screen.findByText('Confirm new time')).toBeTruthy();
+    fireEvent.press(screen.getByText('Keep current time'));
+
+    // Back to the closed state — no reschedule call, no success banner.
+    expect(await screen.findByText('Reschedule')).toBeTruthy();
+    expect(mockReschedule).not.toHaveBeenCalled();
+    expect(screen.queryByText('Your appointment has been moved.')).toBeNull();
+  });
+
+  it('a subsequent cancel clears the just-rescheduled banner', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    mockReschedule.mockResolvedValue({ ...APPOINTMENT, slotId: 'slot-2' });
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByText('Reschedule'));
+
+    const slotChip = await screen.findByTestId(`reschedule-slot-${SLOT.key}`);
+    fireEvent.press(slotChip);
+    fireEvent.press(screen.getByText('Confirm new time'));
+    expect(await screen.findByText('Your appointment has been moved.')).toBeTruthy();
+
+    // Cancelling right after a move must not keep shouting "has been moved".
+    fireEvent.press(screen.getByText('Cancel appointment'));
+    const destructive = alertSpy.mock.calls[0][2]?.find(
+      (button) => button?.text === 'Yes, cancel',
+    );
+    destructive?.onPress?.();
+    await waitFor(() => expect(mockCancel).toHaveBeenCalledWith('apt-1'));
+    expect(screen.queryByText('Your appointment has been moved.')).toBeNull();
+    alertSpy.mockRestore();
+  });
+
+  it('reschedule: an empty picker offers the refresh action instead of a dead end', async () => {
+    mockOpenSlots.mockResolvedValue({
+      data: [],
+      meta: { count: 0, from: SLOT.startsAt, to: SLOT.endsAt },
+    });
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByText('Reschedule'));
+
+    expect(await screen.findByText('No open times in the next two weeks.')).toBeTruthy();
+    fireEvent.press(screen.getByText('Refresh times'));
+    await waitFor(() => expect(mockOpenSlots).toHaveBeenCalledTimes(2));
+  });
+
   it('shows an error state with retry when the appointment fails to load', async () => {
     mockGet.mockRejectedValue({ status: 404, message: 'No such appointment', code: 'NOT_FOUND' });
     const screen = renderScreen();
     expect(await screen.findByText('Something went wrong')).toBeTruthy();
   });
 
-  it('a pending appointment explains itself (not yet confirmed) with a Pending badge', async () => {
+  it('a pending appointment explains itself (shows as confirmed here) with a Pending badge', async () => {
     mockGet.mockResolvedValue({ ...APPOINTMENT, status: 'pending' });
     const screen = renderScreen();
     expect(
       await screen.findByText(
-        'The practitioner hasn’t confirmed this appointment yet — we’ll let you know as soon as they do.',
+        'The practitioner hasn’t confirmed this appointment yet — it will show as confirmed here once they do.',
       ),
     ).toBeTruthy();
     expect(screen.getByTestId('appointment-status-pending')).toBeTruthy();

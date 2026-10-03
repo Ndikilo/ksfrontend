@@ -53,13 +53,17 @@ export default function AppointmentDetailScreen() {
             hours: appointment.cancellationNoticeHours,
             fee: appointment.cancellationFeeXaf.toLocaleString(),
           })
-        : t('booking.confirmPolicyFree', { hours: appointment.cancellationNoticeHours }),
+        : t('appointments.cancelConfirmFree'),
       [
         { text: t('appointments.cancelKeep'), style: 'cancel' },
         {
           text: t('appointments.cancelConfirm'),
           style: 'destructive',
-          onPress: () => void cancel.mutate(appointment.id),
+          onPress: () => {
+            // A move that just succeeded is no longer news once cancelled.
+            setJustRescheduled(false);
+            void cancel.mutate(appointment.id);
+          },
         },
       ],
     );
@@ -88,7 +92,11 @@ export default function AppointmentDetailScreen() {
   }
 
   const status = statusPresentation(appointment.status);
-  const actionable = appointment.status === 'pending' || appointment.status === 'confirmed';
+  // The backend rejects cancel/reschedule once the slot has started
+  // (APPOINTMENT_STARTED) — hide the actions instead of promising a 409.
+  const started = Date.parse(appointment.startsAt) <= Date.now();
+  const actionable =
+    (appointment.status === 'pending' || appointment.status === 'confirmed') && !started;
 
   return (
     <Screen contentStyle={{ gap: theme.spacing.md }}>
@@ -110,7 +118,12 @@ export default function AppointmentDetailScreen() {
       {appointment.status === 'cancelled' ? (
         <Banner tone="info" message={t('appointments.cancelledBanner')} />
       ) : null}
-      {appointment.status === 'cancelled' && appointment.lateCancellation ? (
+      {appointment.status === 'cancelled' &&
+      appointment.lateCancellation &&
+      // The backend stamps lateCancellation regardless of fee; with a 0-fee
+      // policy "0 XAF fee applies" is money-copy nonsense — no banner (the
+      // cancelledBanner above already explains the state).
+      appointment.cancellationFeeXaf > 0 ? (
         <Banner
           tone="warning"
           message={t('appointments.lateCancelBanner', {
@@ -169,6 +182,7 @@ export default function AppointmentDetailScreen() {
                 setJustRescheduled(true);
                 void detail.refetch();
               }}
+              onClose={() => setRescheduling(false)}
             />
           ) : (
             <Button
@@ -196,9 +210,12 @@ export default function AppointmentDetailScreen() {
 function ReschedulePicker({
   appointment,
   onDone,
+  onClose,
 }: {
   appointment: Appointment;
   onDone: () => void;
+  /** Close the picker without moving (the pick is one-way otherwise). */
+  onClose: () => void;
 }) {
   const { t } = useTranslation();
   const [dayKey, setDayKey] = useState<string | null>(null);
@@ -268,9 +285,19 @@ function ReschedulePicker({
     <Card>
       <Text variant="subheading">{t('appointments.rescheduleTitle')}</Text>
       {days.length === 0 ? (
-        <Text variant="body" color="textMuted">
-          {t('appointments.rescheduleEmpty')}
-        </Text>
+        <>
+          <Text variant="body" color="textMuted">
+            {t('appointments.rescheduleEmpty')}
+          </Text>
+          {/* Availability may have changed since the screen opened — offer the
+              refresh instead of a dead end. */}
+          <Button
+            title={t('appointments.rescheduleEmptyAction')}
+            variant="outline"
+            fullWidth
+            onPress={() => void refetchSlots()}
+          />
+        </>
       ) : (
         <>
           {reschedule.error ? <Banner tone="error" message={reschedule.error.message} /> : null}
@@ -288,15 +315,29 @@ function ReschedulePicker({
             </View>
           </ScrollView>
           <View style={styles.slotWrap}>
-            {(activeDay?.slots ?? []).map((slot) => (
-              <Chip
-                key={slot.key}
-                testID={`reschedule-slot-${slot.key}`}
-                label={formatClinicDate(slot.startsAt, { timeStyle: 'short' })}
-                selected={slotKey === slot.key}
-                onPress={() => setSlotKey(slot.key)}
-              />
-            ))}
+            {(activeDay?.slots ?? []).map((slot) => {
+              const selected = slotKey === slot.key;
+              const time = formatClinicDate(slot.startsAt, { timeStyle: 'short' });
+              // Screen readers get time + type + state, not a bare "10:00"
+              // (same rule as the booking flow's slot chips — shared keys).
+              const types = slot.consultationTypes
+                .map((type) => t(`search.${CONSULTATION_TYPE_KEYS[type]}`))
+                .join(' / ');
+              return (
+                <Chip
+                  key={slot.key}
+                  testID={`reschedule-slot-${slot.key}`}
+                  label={time}
+                  selected={selected}
+                  accessibilityLabel={t('booking.slotChipLabel', {
+                    time,
+                    types,
+                    state: selected ? t('booking.chipSelected') : t('booking.chipNotSelected'),
+                  })}
+                  onPress={() => setSlotKey(slot.key)}
+                />
+              );
+            })}
           </View>
           <Button
             title={t('appointments.rescheduleConfirm')}
@@ -307,6 +348,13 @@ function ReschedulePicker({
               if (slotKey === null) return;
               void reschedule.mutate({ id: appointment.id, slotId: slotKey });
             }}
+          />
+          <Button
+            title={t('appointments.rescheduleKeepCurrent')}
+            variant="outline"
+            fullWidth
+            disabled={reschedule.isLoading}
+            onPress={onClose}
           />
         </>
       )}

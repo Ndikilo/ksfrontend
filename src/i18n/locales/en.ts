@@ -153,16 +153,24 @@ export const en = {
     cancelConfirmTitle: 'Cancel this appointment?',
     cancelConfirmLate:
       'The notice window is {{hours}} h — cancelling now is a late cancellation and the {{fee}} XAF fee applies.',
+    // Fee-0 bookings never incur a charge, so the cancel dialog says so in
+    // cancel terms (not the general booking-policy wording).
+    cancelConfirmFree:
+      'You can cancel free of charge — no cancellation fee applies to this appointment.',
     cancelConfirm: 'Yes, cancel',
     cancelKeep: 'Keep appointment',
     cancelledBanner: 'This appointment was cancelled.',
+    // Honest about today's capability: the status flips in THIS app (no
+    // notification exists yet — that lands with P6).
     pendingBanner:
-      'The practitioner hasn’t confirmed this appointment yet — we’ll let you know as soon as they do.',
+      'The practitioner hasn’t confirmed this appointment yet — it will show as confirmed here once they do.',
     lateCancelBanner:
       'Cancelled inside the {{hours}} h notice window — the {{fee}} XAF fee applies.',
     rescheduleTitle: 'Pick a new time',
     rescheduleConfirm: 'Confirm new time',
+    rescheduleKeepCurrent: 'Keep current time',
     rescheduleEmpty: 'No open times in the next two weeks.',
+    rescheduleEmptyAction: 'Refresh times',
     rescheduledBanner: 'Your appointment has been moved.',
     priceLabel: 'Price',
   },

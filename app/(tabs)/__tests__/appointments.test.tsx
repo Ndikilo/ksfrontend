@@ -1,5 +1,6 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
+import { FlatList } from 'react-native';
 
 import '@/i18n';
 import { ThemeProvider } from '@/theme';
@@ -10,8 +11,10 @@ import AppointmentsScreen, { splitAppointments } from '../appointments';
 // The icon package drags in expo-font/expo-asset native modules — stub it.
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
-// Expo Router seam — rows navigate to the detail route; focus refetch is a
-// navigation concern not under test here.
+// Expo Router seam — rows navigate to the detail route. useFocusEffect runs
+// its callback on every focus (like expo-router) and is captured so tests can
+// drive a re-focus refetch (the SWR rule under test).
+let mockOnRefocus: (() => void) | undefined;
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   router: {
@@ -19,7 +22,14 @@ jest.mock('expo-router', () => ({
       return mockPush;
     },
   },
-  useFocusEffect: () => undefined,
+  useFocusEffect: (callback: () => void) => {
+    // expo-router runs the callback on focus — approximated by running it
+    // once per stable callback identity (the screen wraps it in useCallback).
+    if (mockOnRefocus !== callback) {
+      mockOnRefocus = callback;
+      callback();
+    }
+  },
 }));
 
 // API seam — services only (useMutation/useAsync import the barrel for helpers).
@@ -66,9 +76,12 @@ const CANCELLED_FUTURE: Appointment = {
   cancelledAt: '2029-12-01T00:00:00.000Z',
 };
 
-const page = (data: Appointment[]): CursorPage<Appointment> => ({
+const page = (
+  data: Appointment[],
+  meta: Partial<CursorPage<Appointment>['meta']> = {},
+): CursorPage<Appointment> => ({
   data,
-  meta: { count: data.length, limit: 100, nextCursor: null, hasNextPage: false },
+  meta: { count: data.length, limit: 50, nextCursor: null, hasNextPage: false, ...meta },
 });
 
 const renderScreen = () =>
@@ -80,6 +93,7 @@ const renderScreen = () =>
 
 beforeEach(() => {
   jest.resetAllMocks();
+  mockOnRefocus = undefined;
   mockList.mockResolvedValue(page([UPCOMING, PAST_DONE]));
 });
 
@@ -109,7 +123,15 @@ describe('AppointmentsScreen (P4.T2)', () => {
     expect(screen.getByText('In person')).toBeTruthy();
     expect(screen.getByText('5,000 XAF')).toBeTruthy();
     expect(screen.getByText('Pending')).toBeTruthy();
-    expect(mockList).toHaveBeenCalledWith({ limit: 100 });
+    expect(mockList).toHaveBeenCalledWith({ limit: 50 });
+  });
+
+  it('rows announce type + when + price + state to screen readers', async () => {
+    const screen = renderScreen();
+    const row = await screen.findByTestId('appointment-row-apt-1');
+    expect(row.props.accessibilityLabel).toContain('In person');
+    expect(row.props.accessibilityLabel).toContain('5,000 XAF');
+    expect(row.props.accessibilityLabel).toContain('Pending');
   });
 
   it('switches to the past list with the Past segment chip', async () => {
@@ -144,5 +166,68 @@ describe('AppointmentsScreen (P4.T2)', () => {
     mockList.mockResolvedValue(page([UPCOMING]));
     fireEvent.press(screen.getByText('Try again'));
     await waitFor(() => expect(screen.getByTestId('appointment-row-apt-1')).toBeTruthy());
+  });
+
+  it('loads the next cursor page on end reached (history is never capped)', async () => {
+    mockList.mockResolvedValue(
+      page([UPCOMING], { nextCursor: 'cursor-1', hasNextPage: true }),
+    );
+    const screen = renderScreen();
+    await screen.findByTestId('appointment-row-apt-1');
+
+    mockList.mockResolvedValue(page([PAST_DONE]));
+    const list = screen.UNSAFE_getByType(FlatList);
+    act(() => list.props.onEndReached?.());
+
+    await waitFor(() =>
+      expect(mockList).toHaveBeenCalledWith({ limit: 50, cursor: 'cursor-1' }),
+    );
+    fireEvent.press(screen.getByText('Past'));
+    expect(await screen.findByTestId('appointment-row-apt-3')).toBeTruthy();
+  });
+
+  it('a failed page load keeps the loaded history and offers a retry', async () => {
+    mockList.mockResolvedValue(
+      page([UPCOMING], { nextCursor: 'cursor-1', hasNextPage: true }),
+    );
+    const screen = renderScreen();
+    await screen.findByTestId('appointment-row-apt-1');
+
+    mockList.mockRejectedValueOnce({ status: 0, code: 'OFFLINE', message: 'No connection.' });
+    const list = screen.UNSAFE_getByType(FlatList);
+    act(() => list.props.onEndReached?.());
+
+    expect(await screen.findByText('Try again')).toBeTruthy();
+    // The first page's rows are still mounted.
+    expect(screen.getByTestId('appointment-row-apt-1')).toBeTruthy();
+
+    mockList.mockResolvedValue(page([PAST_DONE]));
+    fireEvent.press(screen.getByText('Try again'));
+    await waitFor(() =>
+      expect(mockList).toHaveBeenCalledWith({ limit: 50, cursor: 'cursor-1' }),
+    );
+  });
+
+  it('a re-focus refetch keeps the list mounted (stale-while-revalidate)', async () => {
+    const screen = renderScreen();
+    await screen.findByTestId('appointment-row-apt-1');
+
+    // Refetch resolves later — while it is in flight the rows stay mounted.
+    let resolveRefetch: (value: CursorPage<Appointment>) => void = () => {};
+    mockList.mockReturnValue(
+      new Promise<CursorPage<Appointment>>((resolve) => {
+        resolveRefetch = resolve;
+      }),
+    );
+    act(() => mockOnRefocus?.());
+    expect(mockList).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId('appointment-row-apt-1')).toBeTruthy();
+    expect(screen.queryByTestId('appointments-spinner')).toBeNull();
+
+    await act(async () => {
+      resolveRefetch(page([SOONER, UPCOMING]));
+    });
+    expect(screen.getByTestId('appointment-row-apt-2')).toBeTruthy();
+    expect(screen.getByTestId('appointment-row-apt-1')).toBeTruthy();
   });
 });
