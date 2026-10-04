@@ -65,13 +65,24 @@ is the committed twin — keep them identical.
   already-visible data (focus refresh, post-mutation refresh, retry) keeps the
   content mounted (stale-while-revalidate); the full-screen `Spinner` branch is
   first load only — gate it on `isLoading && data === null`, never a bare
-  `isLoading`.
+  `isLoading`. A refocus/retry refetch that FAILS while stale content stays
+  mounted surfaces a `Banner` (the patient appointments-tab pattern) — never a
+  silent failure the user can't distinguish from fresh data.
 - Every interactive element shows default / pressed (≤100ms feedback) /
   disabled / loading. No dead taps; no dead ends (always a way forward or back).
 - Destructive actions confirm. After success the user lands somewhere useful —
   never a bare success screen.
 - Lists are FlatList/sectionalized with `keyExtractor`; unbounded data
   paginates (cursor, like the API). Images have fixed dimensions.
+- Role-aware shells: which tab group a session lands on is decided by ONE
+  pure role→route table (`src/store/roles.ts`) consumed by every guard
+  (splash, auth redirect, both group layouts — no guard reimplements the
+  predicate). A signed-in deep-return `redirect` param must never override
+  role routing into the other role's flow, and any route outside both
+  groups that only one role may use (e.g. booking/checkout) carries its own
+  role guard. Persona data: a practitioner surface shows WHO each row
+  belongs to (patient name leads the row and its a11y label) — a nameless
+  agenda fails the Doctolib/Zocdoc benchmark.
 - i18n: every user-facing string through `t()` (`src/i18n`, en + fr always both);
   no `allowFontScaling={false}`; layouts must survive ~+20% French expansion and
   OS font scaling. Interpolated keys (`{{param}}`) must receive every param at
