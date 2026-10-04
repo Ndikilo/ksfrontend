@@ -4,3 +4,4 @@ export { storage } from './storage';
 export * from './validators';
 export * from './format';
 export * from './slots';
+export * from './appointments';

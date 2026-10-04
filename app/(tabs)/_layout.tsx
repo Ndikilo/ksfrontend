@@ -3,17 +3,24 @@ import { Redirect, Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { Spinner } from '@/components/ui';
-import { useAuth } from '@/store';
+import { isPractitionerRole, useAuth } from '@/store';
 import { useTheme } from '@/theme';
 
-/** Main app tabs — guarded so only authenticated users get here. */
+/**
+ * Main patient app tabs — guarded so only authenticated patients get here.
+ * P7.T1 route guard: a practitioner session is redirected to the
+ * practitioner console (`/practice`), never the patient tabs. The guard runs
+ * at session restore AND at sign-in, and a mid-session session change
+ * re-renders this layout so the user moves to the right group.
+ */
 export default function TabsLayout() {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { status } = useAuth();
+  const { status, session } = useAuth();
 
   if (status === 'loading') return <Spinner />;
   if (status === 'unauthenticated') return <Redirect href="/login" />;
+  if (isPractitionerRole(session?.user.role)) return <Redirect href="/practice" />;
 
   const iconColor = (focused: boolean) =>
     focused ? theme.colors.primary : theme.colors.textMuted;

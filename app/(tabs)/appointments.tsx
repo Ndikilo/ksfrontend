@@ -1,17 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 
 import { appointmentsService } from '@/api';
+import { AppointmentRow } from '@/components/appointments';
 import { Banner, EmptyState, ErrorState } from '@/components/feedback';
-import { Badge, Button, Chip, Screen, Spinner, Text } from '@/components/ui';
-import { CONSULTATION_TYPE_KEYS } from '@/constants';
+import { Button, Chip, Screen, Spinner, Text } from '@/components/ui';
 import { useAsync } from '@/hooks';
 import { useTheme } from '@/theme';
 import type { Appointment } from '@/types';
-import { formatClinicDate } from '@/utils';
+import { splitAppointments } from '@/utils';
+
+// Re-exported for the screen tests; the implementations live in `@/utils`.
+export { splitAppointments, statusPresentation } from '@/utils';
 
 /**
  * Appointments tab (P4.T2): upcoming/past lists replacing the placeholder.
@@ -19,35 +22,13 @@ import { formatClinicDate } from '@/utils';
  * split client-side by the clinic clock; the detail route owns
  * cancel/reschedule. Refetches on re-focus without discarding visible
  * content (stale-while-revalidate: the full-screen Spinner is first load
- * only).
+ * only). P7.T1: the row + list rules are shared with the practitioner agenda.
  */
 
 type Segment = 'upcoming' | 'past';
 
-const ACTIVE_STATUSES = new Set(['pending', 'confirmed']);
-
 /** Page size for the backend's keyset cursor — history is never capped. */
 const PAGE_SIZE = 50;
-
-/** Split a booking list into upcoming (future, still active) and past — pure. */
-export const splitAppointments = (
-  appointments: readonly Appointment[],
-  nowMs: number,
-): { upcoming: Appointment[]; past: Appointment[] } => {
-  const upcoming: Appointment[] = [];
-  const past: Appointment[] = [];
-  for (const appointment of appointments) {
-    // A cancelled/finished booking is history even if its start is still ahead.
-    if (ACTIVE_STATUSES.has(appointment.status) && Date.parse(appointment.startsAt) > nowMs) {
-      upcoming.push(appointment);
-    } else {
-      past.push(appointment);
-    }
-  }
-  upcoming.sort((a, b) => a.startsAt.localeCompare(b.startsAt)); // soonest first
-  past.sort((a, b) => b.startsAt.localeCompare(a.startsAt)); // most recent first
-  return { upcoming, past };
-};
 
 export default function AppointmentsScreen() {
   const theme = useTheme();
@@ -201,65 +182,6 @@ export default function AppointmentsScreen() {
   );
 }
 
-/** A practitioner row in the appointments list — memoized (FlatList rows). */
-const AppointmentRow = memo(function AppointmentRow({ appointment }: { appointment: Appointment }) {
-  const theme = useTheme();
-  const { t } = useTranslation();
-  const status = statusPresentation(appointment.status);
-  const type = t(`search.${CONSULTATION_TYPE_KEYS[appointment.consultationType]}`);
-  // Row density: `medium` reads better than `full` at this size, especially
-  // with French expansion (Review 006 minor).
-  const when = formatClinicDate(appointment.startsAt, { dateStyle: 'medium', timeStyle: 'short' });
-
-  return (
-    <Pressable
-      testID={`appointment-row-${appointment.id}`}
-      accessibilityRole="button"
-      // Type + when + price + state — not just the date (Review 006 minor).
-      accessibilityLabel={`${type}, ${when}, ${appointment.priceXaf.toLocaleString()} XAF, ${t(`appointments.${status.key}`)}`}
-      onPress={() => router.push(`/appointments/${appointment.id}`)}
-      style={({ pressed }) => [
-        styles.row,
-        {
-          backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.border,
-          borderRadius: theme.radius.lg,
-        },
-        pressed && styles.pressed,
-      ]}
-    >
-      <View style={styles.rowMain}>
-        <Text variant="bodyStrong">{type}</Text>
-        <Text variant="body" color="textMuted">
-          {when}
-        </Text>
-        <Text variant="caption" color="textMuted">
-          {appointment.priceXaf.toLocaleString()} XAF
-        </Text>
-      </View>
-      <Badge label={t(`appointments.${status.key}`)} tone={status.tone} />
-    </Pressable>
-  );
-});
-
-/** Maps the lifecycle status to a localized label key + badge tone. */
-export const statusPresentation = (
-  status: Appointment['status'],
-): { key: string; tone: 'neutral' | 'primary' | 'success' | 'warning' | 'danger' } => {
-  switch (status) {
-    case 'pending':
-      return { key: 'statusPending', tone: 'warning' };
-    case 'confirmed':
-      return { key: 'statusConfirmed', tone: 'success' };
-    case 'cancelled':
-      return { key: 'statusCancelled', tone: 'neutral' };
-    case 'completed':
-      return { key: 'statusCompleted', tone: 'primary' };
-    default:
-      return { key: 'statusNoShow', tone: 'danger' };
-  }
-};
-
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   segments: { flexDirection: 'row', gap: 8 },
@@ -267,14 +189,4 @@ const styles = StyleSheet.create({
   list: { gap: 12, paddingBottom: 24, flexGrow: 1 },
   listFlex: { flex: 1 },
   footer: { alignItems: 'center', paddingVertical: 16 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    borderWidth: 1,
-    padding: 16,
-  },
-  pressed: { opacity: 0.85 },
-  rowMain: { flex: 1, gap: 2 },
 });

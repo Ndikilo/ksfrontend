@@ -297,6 +297,17 @@ export const en = {
     tipsBody: 'Stay hydrated and aim for 30 minutes of activity today. Small steps add up.',
   },
 
+  // Practitioner console (P7) — the doctor/nurse tab group.
+  practice: {
+    agendaTitle: 'Agenda',
+    tabAgenda: 'Agenda',
+    tabProfile: 'Profile',
+    upcomingEmptyTitle: 'No upcoming appointments',
+    upcomingEmptyMessage: 'Bookings your patients make will appear here.',
+    pastEmptyTitle: 'No past appointments',
+    pastEmptyMessage: 'Your appointment history will appear here.',
+  },
+
   profile: {
     title: 'Profile',
     guestUser: 'Guest User',

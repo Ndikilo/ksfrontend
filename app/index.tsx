@@ -5,7 +5,7 @@ import { Animated, StyleSheet, View } from 'react-native';
 
 import { Logo, Watermark } from '@/components/brand';
 import { StorageKeys } from '@/constants';
-import { useAuth } from '@/store';
+import { tabsRouteForRole, useAuth } from '@/store';
 import { useTheme } from '@/theme';
 import { storage } from '@/utils';
 
@@ -18,7 +18,7 @@ const MIN_SPLASH_MS = 1600;
  * the user to language selection (first run) or into the app.
  */
 export default function SplashRoute() {
-  const { status } = useAuth();
+  const { status, session } = useAuth();
   const [minElapsed, setMinElapsed] = useState(false);
   // undefined = not read yet; null = read but not set; string = chosen language.
   const [language, setLanguage] = useState<string | null | undefined>(undefined);
@@ -37,9 +37,12 @@ export default function SplashRoute() {
     if (!language) {
       router.replace('/language');
     } else {
-      router.replace(status === 'authenticated' ? '/(tabs)' : '/onboarding');
+      // P7.T1: the session role picks the tab group at restore —
+      // practitioners land on their console, everyone else on the patient
+      // tabs. A role change mid-session re-runs this with the new session.
+      router.replace(status === 'authenticated' ? tabsRouteForRole(session?.user.role) : '/onboarding');
     }
-  }, [minElapsed, status, language]);
+  }, [minElapsed, status, language, session]);
 
   return <SplashView />;
 }

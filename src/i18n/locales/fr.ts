@@ -298,6 +298,17 @@ export const fr: Translations = {
       "Hydratez-vous et visez 30 minutes d'activité aujourd'hui. Les petits pas comptent.",
   },
 
+  // Console praticien (P7) — le groupe d'onglets médecin/infirmier.
+  practice: {
+    agendaTitle: 'Agenda',
+    tabAgenda: 'Agenda',
+    tabProfile: 'Profil',
+    upcomingEmptyTitle: 'Aucun rendez-vous à venir',
+    upcomingEmptyMessage: 'Les rendez-vous pris par vos patients apparaîtront ici.',
+    pastEmptyTitle: 'Aucun rendez-vous passé',
+    pastEmptyMessage: "L'historique de vos rendez-vous apparaîtra ici.",
+  },
+
   profile: {
     title: 'Profil',
     guestUser: 'Utilisateur invité',
