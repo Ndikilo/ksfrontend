@@ -87,7 +87,10 @@ is the committed twin — keep them identical.
   never from a possibly-stale sibling; "due" vs "paid" labels match the charge
   status; a poll loop spins only while it is actually polling — at the cap,
   stop the spinner and say so (an infinite spinner over a stopped loop is a
-  banned state); a resumed charge must never interpolate state the record
+  banned state), and every handler that clears the exhausted flag must also
+  RESTART the loop (re-kick the chain) — clearing the flag alone re-creates
+  the banned spinner-over-stopped-loop state; a resumed charge must never
+  interpolate state the record
   doesn't carry (empty `{{param}}` renders as "sent to ."); and payment
   success/failure must be ANNOUNCED (`AccessibilityInfo.announceForAccessibility`
   / `accessibilityLiveRegion`, as `OfflineBanner` already does), not only shown.
