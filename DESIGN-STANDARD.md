@@ -82,6 +82,15 @@ is the committed twin — keep them identical.
 - Money-adjacent terms are committed with their ACTUAL numbers before the user
   commits: the confirm step states the real cancellation notice window and fee
   (from the practitioner's policy), never "details shown after booking".
+- Money flows (checkout, receipts) have an honesty bar of their own: receipt
+  rows render from the PAYMENT record (amount, rail, paid-at, receipt number),
+  never from a possibly-stale sibling; "due" vs "paid" labels match the charge
+  status; a poll loop spins only while it is actually polling — at the cap,
+  stop the spinner and say so (an infinite spinner over a stopped loop is a
+  banned state); a resumed charge must never interpolate state the record
+  doesn't carry (empty `{{param}}` renders as "sent to ."); and payment
+  success/failure must be ANNOUNCED (`AccessibilityInfo.announceForAccessibility`
+  / `accessibilityLiveRegion`, as `OfflineBanner` already does), not only shown.
 - Error-recovery controls (retry, load-more retry) must actually RE-ISSUE the
   failed request — a handler that only clears the error flag through a stale
   closure is a dead tap (guard state read from the old render's callback).
