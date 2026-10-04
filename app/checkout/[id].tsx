@@ -179,15 +179,19 @@ export default function CheckoutScreen() {
     };
 
     // Foreground recovery — backgrounding mid-poll is the NORMAL mobile-money
-    // flow (the user leaves to approve the SIM push). Coming back to the app
-    // immediately re-checks once and grants a fresh auto-poll budget.
+    // flow (the user leaves to approve the SIM push). Coming back RE-KICKS the
+    // whole effect instead of calling checkOnce() here: this closure outlives
+    // the auto-poll cap, and checkOnce() schedules nothing — that combination
+    // re-created the banned spinner-over-stopped-loop state (Review 010).
+    // setPollKick runs this effect's cleanup (cancelling the live timer and
+    // this subscription) and starts a fresh chain with a fresh budget —
+    // identical semantics to the "check again" button.
     const subscription = AppState.addEventListener(
       'change',
       (state: AppStateStatus) => {
         if (cancelled || state !== 'active') return;
-        tries = 0;
         setExhausted(false);
-        void checkOnce();
+        setPollKick((k) => k + 1);
       },
     );
 

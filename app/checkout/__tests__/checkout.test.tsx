@@ -292,6 +292,71 @@ describe('checkout screen (P5.T5)', () => {
     expect(mockGetPayment).toHaveBeenLastCalledWith('pay-1');
   });
 
+  it('foregrounding AFTER the cap re-kicks the live loop (new call + cadence); the honest exhausted state returns if no result lands', async () => {
+    mockInitiate.mockResolvedValue(PENDING_CHARGE);
+    mockGetPayment.mockResolvedValue(PENDING_CHARGE); // never decides
+
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByText('Choose how to pay'));
+    fireEvent.press(await screen.findByText('MoMo'));
+    fireEvent.changeText(
+      screen.getByLabelText('Mobile Money number'),
+      '+237690000000',
+    );
+
+    jest.useFakeTimers();
+    try {
+      await act(async () => {
+        fireEvent.press(screen.getByText('Pay 5,000 XAF'));
+      });
+      expect(mockGetPayment).toHaveBeenCalledTimes(1); // the immediate first check
+
+      // Burn the auto-poll budget: the loop stops and says so.
+      for (let i = 0; i < MAX_AUTO_POLLS; i += 1) {
+        await act(async () => {
+          jest.advanceTimersByTime(POLL_INTERVAL_MS);
+        });
+      }
+      expect(mockGetPayment).toHaveBeenCalledTimes(MAX_AUTO_POLLS);
+      expect(screen.UNSAFE_queryByType(Spinner)).toBeNull();
+      expect(
+        screen.getByText('We haven’t received the confirmation yet.'),
+      ).toBeTruthy();
+
+      // Review-010 pin: the user backgrounds past the cap (approving the SIM
+      // push is the normal flow) and returns. The 'active' handler must
+      // RESTART the chain — a NEW immediate call + the spinner back — never
+      // just re-show a spinner over a dead loop.
+      await act(async () => {
+        fireAppState('active');
+      });
+      expect(mockGetPayment).toHaveBeenCalledTimes(MAX_AUTO_POLLS + 1);
+      expect(mockGetPayment).toHaveBeenLastCalledWith('pay-1');
+      expect(screen.UNSAFE_queryByType(Spinner)).toBeTruthy();
+
+      // The loop actually TICKS again (fresh cadence), not a one-off check.
+      await act(async () => {
+        jest.advanceTimersByTime(POLL_INTERVAL_MS);
+      });
+      expect(mockGetPayment).toHaveBeenCalledTimes(MAX_AUTO_POLLS + 2);
+
+      // No decision landed and the re-kicked budget burns out too: the honest
+      // exhausted state returns — the cap is still enforced on the new chain.
+      for (let i = 0; i < MAX_AUTO_POLLS; i += 1) {
+        await act(async () => {
+          jest.advanceTimersByTime(POLL_INTERVAL_MS);
+        });
+      }
+      expect(mockGetPayment).toHaveBeenCalledTimes(MAX_AUTO_POLLS * 2);
+      expect(screen.UNSAFE_queryByType(Spinner)).toBeNull();
+      expect(
+        screen.getByText('We haven’t received the confirmation yet.'),
+      ).toBeTruthy();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('resumes a pending/initiated charge into polling without re-initiating (never "sent to .")', async () => {
     mockByAppointment.mockResolvedValue(PENDING_CHARGE);
     mockGetPayment.mockResolvedValue(PENDING_CHARGE);
