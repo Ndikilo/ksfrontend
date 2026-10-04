@@ -1,12 +1,11 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 
 import { appointmentsService } from '@/api';
 import { Banner, ErrorState } from '@/components/feedback';
-import { Badge, Button, Card, Chip, Divider, Screen, Spinner, Text } from '@/components/ui';
+import { BackButton, Badge, Button, Card, Chip, Divider, Screen, Spinner, Text } from '@/components/ui';
 import { CONSULTATION_TYPE_KEYS } from '@/constants';
 import { useAsync, useMutation } from '@/hooks';
 import { useTheme } from '@/theme';
@@ -384,26 +383,9 @@ function ReschedulePicker({
   );
 }
 
-function BackButton() {
-  const theme = useTheme();
-  const { t } = useTranslation();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={t('common.goBack')}
-      onPress={() => router.back()}
-      hitSlop={12}
-      style={styles.back}
-    >
-      <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 24 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   chipRow: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
   slotWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 12 },
-  back: { padding: 4, alignSelf: 'flex-start' },
 });

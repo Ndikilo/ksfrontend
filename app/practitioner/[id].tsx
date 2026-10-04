@@ -1,10 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { searchService } from '@/api';
-import { Avatar, Badge, Button, Card, Divider, Screen, Spinner, Text } from '@/components/ui';
+import { Avatar, BackButton, Badge, Button, Card, Divider, Screen, Spinner, Text } from '@/components/ui';
 import { CONSULTATION_TYPE_KEYS, professionIcon } from '@/constants';
 import { useAsync } from '@/hooks';
 import { useTheme } from '@/theme';
@@ -196,15 +195,6 @@ export default function PractitionerDetailScreen() {
   );
 }
 
-function BackButton() {
-  const theme = useTheme();
-  return (
-    <Pressable onPress={() => router.back()} hitSlop={12} style={styles.back}>
-      <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-    </Pressable>
-  );
-}
-
 function FactLine({ label }: { label: string }) {
   return (
     <Text variant="caption" color="textMuted">
@@ -215,7 +205,6 @@ function FactLine({ label }: { label: string }) {
 
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  back: { padding: 4, alignSelf: 'flex-start' },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   identityInfo: { flex: 1, gap: 4 },
   badgeRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },

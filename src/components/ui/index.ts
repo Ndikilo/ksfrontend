@@ -1,4 +1,5 @@
 export { Text, type TextProps } from './Text';
+export { BackButton } from './BackButton';
 export { Button, type ButtonProps } from './Button';
 export { Chip, type ChipProps } from './Chip';
 export { IconButton, type IconButtonProps } from './IconButton';
