@@ -10,6 +10,7 @@ import { Banner, ErrorState } from '@/components/feedback';
 import { Badge, Button, Card, Divider, IconButton, Input, Spinner, Text } from '@/components/ui';
 import { useAsync, useMutation } from '@/hooks';
 import { useTheme } from '@/theme';
+import { formatDate } from '@/utils';
 import type {
   CredentialsSubmissionInput,
   VerificationDocumentKind,
@@ -53,6 +54,14 @@ const PHOTO_MIME_TYPES = ['image/jpeg', 'image/png'] as const;
 
 const DOCUMENT_KINDS: VerificationDocumentKind[] = ['cmc-certificate', 'nic', 'profile-photo'];
 
+/** Copy fragment naming each document when the blocked-submit message lists
+ *  exactly what is still missing (Review 013 MINOR-7). */
+const MISSING_DOC_LABEL_KEY: Record<VerificationDocumentKind, string> = {
+  'cmc-certificate': 'practice.verification.missingDocCmc',
+  nic: 'practice.verification.missingDocNic',
+  'profile-photo': 'practice.verification.missingDocPhoto',
+};
+
 type UploadPhase = 'idle' | 'uploading' | 'uploaded' | 'error';
 
 /** A picked file as expo-document-picker reports it. */
@@ -63,7 +72,7 @@ const allowedMimeTypes = (kind: VerificationDocumentKind): readonly string[] =>
 
 export function VerificationCard() {
   const theme = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [cmcNumber, setCmcNumber] = useState('');
   const [nicNumber, setNicNumber] = useState('');
@@ -89,6 +98,17 @@ export function VerificationCard() {
   const verification = useAsync(() => practitionerService.getVerification(), []);
   const { data, error, isLoading, refetch } = verification;
 
+  // Per-kind upload sequence: any removal (or a fresh pick) invalidates the
+  // in-flight round-trip, so a completed upload can never resurrect a row the
+  // practitioner deleted mid-upload — the remove control stays usable while
+  // uploading (Review 013 MINOR-6).
+  const uploadSequence = useRef<Record<string, number>>({});
+  const nextUploadSequence = useCallback((kind: VerificationDocumentKind): number => {
+    const next = (uploadSequence.current[kind] ?? 0) + 1;
+    uploadSequence.current[kind] = next;
+    return next;
+  }, []);
+
   // Tabs stay mounted — refetch on every RE-focus so an admin decision shows
   // up without a restart (the agenda's focus-refetch pattern: the initial
   // focus is skipped, useAsync's mount effect already fired).
@@ -103,6 +123,8 @@ export function VerificationCard() {
   // --- Upload pipeline: pick → validate → presign → PUT → keep the key -------
   const upload = useCallback(
     async (kind: VerificationDocumentKind, file: PickedDocument) => {
+      const sequence = nextUploadSequence(kind);
+      const isStale = () => uploadSequence.current[kind] !== sequence;
       setFileError(null);
       setPhases((prev) => ({ ...prev, [kind]: 'uploading' }));
       try {
@@ -113,16 +135,18 @@ export function VerificationCard() {
           file.mimeType as string,
         );
         await practitionerService.uploadDocument(url, file.mimeType as string, file.uri);
+        if (isStale()) return; // removed mid-upload — the row stays removed
         setFileKeys((prev) => ({ ...prev, [kind]: key }));
         setPhases((prev) => ({ ...prev, [kind]: 'uploaded' }));
       } catch {
+        if (isStale()) return; // removed mid-upload — no failure state either
         // The file stays picked; the row keeps an explicit Retry that re-issues
         // presign + PUT (a stale-closure-safe new call, not just a flag clear).
         setFileKeys((prev) => ({ ...prev, [kind]: null }));
         setPhases((prev) => ({ ...prev, [kind]: 'error' }));
       }
     },
-    [],
+    [nextUploadSequence],
   );
 
   const pickDocument = useCallback(
@@ -158,10 +182,14 @@ export function VerificationCard() {
   );
 
   const removeDocument = useCallback((kind: VerificationDocumentKind) => {
+    // Invalidate any in-flight upload for this kind: the round-trip completes
+    // against a discarded local key — a harmless storage orphan — but must
+    // never write its key/phase back over the removal.
+    nextUploadSequence(kind);
     setDocuments((prev) => ({ ...prev, [kind]: null }));
     setFileKeys((prev) => ({ ...prev, [kind]: null }));
     setPhases((prev) => ({ ...prev, [kind]: 'idle' }));
-  }, []);
+  }, [nextUploadSequence]);
 
   // --- Submit: numbers + the three presigned keys ----------------------------
   const submission = useMutation(
@@ -173,16 +201,28 @@ export function VerificationCard() {
     },
   );
 
+  // Blocked-submit copy names the ACTUAL missing set, not everything
+  // (Review 013 MINOR-7): one dynamic sentence via list interpolation, so a
+  // practitioner with one missing item is not told to redo all five.
   const pressSubmit = useCallback(() => {
     setFormError(null);
-    const numbersValid =
-      cmcNumber.trim().length >= 3 &&
-      cmcNumber.trim().length <= 60 &&
-      nicNumber.trim().length >= 3 &&
-      nicNumber.trim().length <= 60;
-    const allUploaded = DOCUMENT_KINDS.every((kind) => fileKeys[kind] !== null);
-    if (!numbersValid || !allUploaded) {
-      setFormError(t('practice.verification.nothingSelected'));
+    const missing: string[] = [];
+    if (cmcNumber.trim().length < 3 || cmcNumber.trim().length > 60) {
+      missing.push(t('practice.verification.missingCmcNumber'));
+    }
+    if (nicNumber.trim().length < 3 || nicNumber.trim().length > 60) {
+      missing.push(t('practice.verification.missingNicNumber'));
+    }
+    for (const kind of DOCUMENT_KINDS) {
+      if (fileKeys[kind] === null) missing.push(t(MISSING_DOC_LABEL_KEY[kind]));
+    }
+    if (missing.length > 0) {
+      // The natural "A, B and C" conjunction is locale grammar — Intl handles
+      // it in the in-app language (never the device locale, standard §7).
+      const listing = new Intl.ListFormat(i18n.language, {
+        type: 'conjunction',
+      }).format(missing);
+      setFormError(t('practice.verification.nothingSelected', { missing: listing }));
       return;
     }
     void submission.mutate({
@@ -192,7 +232,7 @@ export function VerificationCard() {
       nicFileKey: fileKeys.nic as string,
       profilePhotoFileKey: fileKeys['profile-photo'] as string,
     });
-  }, [cmcNumber, nicNumber, fileKeys, submission, t]);
+  }, [cmcNumber, nicNumber, fileKeys, i18n.language, submission, t]);
 
   // --- Render states ----------------------------------------------------------
   if (isLoading && data === null) {
@@ -247,9 +287,7 @@ export function VerificationCard() {
   const showForm =
     data.canResubmit && (status === 'incomplete' || status === 'rejected');
   const submittedDate = data.submittedAt
-    ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(
-        new Date(data.submittedAt),
-      )
+    ? formatDate(data.submittedAt, { dateStyle: 'medium' }, i18n.language)
     : null;
 
   const renderDocumentRow = (kind: VerificationDocumentKind) => {
@@ -298,7 +336,19 @@ export function VerificationCard() {
           ) : null}
         </View>
         {phase === 'uploading' ? (
-          <Spinner />
+          // The remove control stays usable DURING the upload (Review 013
+          // MINOR-6): removing discards the local key — the in-flight
+          // round-trip completes as a harmless storage orphan, and the
+          // sequence guard keeps its late response from resurrecting the row.
+          <>
+            <Spinner />
+            <IconButton
+              name="close"
+              variant="ghost"
+              accessibilityLabel={`${t('practice.verification.removeFile')} — ${label}`}
+              onPress={() => removeDocument(kind)}
+            />
+          </>
         ) : phase === 'uploaded' ? (
           <>
             <Ionicons

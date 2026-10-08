@@ -440,7 +440,14 @@ export const fr: Translations = {
       removeFile: 'Supprimer le fichier',
       fileTooLarge: 'Ce fichier dépasse 25 Mo. Choisissez-en un plus léger.',
       fileTypeUnsupported: 'Ce type de fichier n’est pas pris en charge ici.',
-      nothingSelected: 'Renseignez les deux numéros et joignez les trois documents pour envoyer.',
+      // Le message d'envoi bloqué nomme ce qui manque RÉELLEMENT (Review 013) :
+      // les fragments sont joints par la conjonction de la locale (Intl.ListFormat).
+      missingCmcNumber: 'votre numéro au Conseil médical du Cameroun',
+      missingNicNumber: 'votre numéro de carte nationale d’identité',
+      missingDocCmc: 'le certificat d’inscription au CMC',
+      missingDocNic: 'la copie de la carte nationale d’identité',
+      missingDocPhoto: 'la photo de profil',
+      nothingSelected: 'Ajoutez {{missing}} pour envoyer votre dossier.',
       submitCredentials: 'Envoyer pour vérification',
       pendingTitle: 'Votre dossier est en cours d’examen',
       pendingBody:
@@ -449,7 +456,9 @@ export const fr: Translations = {
       pendingEditNote:
         'Vous pouvez continuer à modifier votre profil public et vos disponibilités en attendant.',
       rejectedTitle: 'Votre dossier n’a pas été validé',
-      rejectedBody: 'Mettez vos documents et numéros à jour ci-dessous, puis renvoyez-les.',
+      // Copy autonome (Review 013) : ce texte s'affiche aussi quand le
+      // formulaire est masqué — il ne doit pas dire « ci-dessous ».
+      rejectedBody: 'Mettez vos documents et numéros à jour, puis renvoyez-les.',
       resubmit: 'Mettre à jour et renvoyer',
       verifiedBody: 'Les patients peuvent vous trouver et réserver avec vous.',
       notRegisteredTitle: 'Profil praticien manquant',

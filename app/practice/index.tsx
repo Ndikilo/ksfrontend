@@ -11,7 +11,13 @@ import { Button, Chip, IconButton, Screen, Spinner, Text } from '@/components/ui
 import { useAsync } from '@/hooks';
 import { useTheme } from '@/theme';
 import type { ApiError, Appointment, ID } from '@/types';
-import { clinicDateKey, formatClinicDate, splitAppointments } from '@/utils';
+import {
+  clinicDateKey,
+  formatClinicDate,
+  formatDayKey,
+  formatWeekdayKey,
+  splitAppointments,
+} from '@/utils';
 
 /**
  * Practitioner agenda (P7.T1/P7.T3) — the console's home tab, over the
@@ -29,7 +35,10 @@ import { clinicDateKey, formatClinicDate, splitAppointments } from '@/utils';
  *
  * One fetch serves every segment (the status filter would cost a second
  * request on 3G for the same rows); each decision lands in the segment it
- * belongs to the moment its optimistic status flips.
+ * belongs to the moment its optimistic status flips. The window never lies
+ * (Review 013): a Day or the Requests segment only says "empty" once the
+ * cursor window provably covers it — until then extra pages are fetched
+ * (fetch-to-coverage, standard §7).
  */
 
 type Segment = 'pending' | 'day' | 'upcoming' | 'past';
@@ -44,28 +53,18 @@ const PAGE_SIZE = 50;
 
 // Calendar-key helpers (same convention as the availability editor): a
 // `YYYY-MM-DD` clinic-local key is moved with device calendar arithmetic and
-// rendered at UTC noon, so it shows the same date on every device.
+// rendered at UTC noon (the shared `formatDayKey`/`formatWeekdayKey`), so it
+// shows the same date on every device — in the in-app language, passed
+// explicitly at the call sites (codified standard §7).
 const shiftDayKey = (key: string, days: number): string => {
   const [year = 2000, month = 1, day = 1] = key.split('-').map(Number);
   const shifted = new Date(year, month - 1, day + days);
   return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, '0')}-${String(shifted.getDate()).padStart(2, '0')}`;
 };
 
-/** A `YYYY-MM-DD` key rendered at UTC noon — the same calendar date everywhere. */
-const formatDayKey = (key: string): string =>
-  new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeZone: 'utc' }).format(
-    new Date(`${key}T12:00:00Z`),
-  );
-
-/** Long weekday name of a `YYYY-MM-DD` key, in the UI language. */
-const weekdayOfDayKey = (key: string): string =>
-  new Intl.DateTimeFormat(undefined, { weekday: 'long', timeZone: 'utc' }).format(
-    new Date(`${key}T12:00:00Z`),
-  );
-
 export default function AgendaScreen() {
   const theme = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [segment, setSegment] = useState<Segment>('upcoming');
 
   // The practitioner's clock: captured on mount and refreshed on focus /
@@ -100,25 +99,34 @@ export default function AgendaScreen() {
   // `isRetry` bypasses the loadMoreError guard (qc-007 MAJOR): the Retry tap
   // runs while this closure still observes the captured `loadMoreError ===
   // true` — without the flag the call would return immediately (a dead tap).
-  const loadMore = useCallback(async (isRetry = false) => {
-    if (nextCursor === null || isLoadingMore || (loadMoreError && !isRetry)) return;
-    setIsLoadingMore(true);
-    try {
-      const page = await appointmentsService.list({
-        scope: 'practitioner',
-        limit: PAGE_SIZE,
-        cursor: nextCursor,
-      });
-      setOlderPages((prev) => [...prev, ...page.data]);
-      setNextCursor(page.meta.nextCursor);
-    } catch {
-      // Best-effort pagination: the loaded history stays usable; the footer
-      // offers an explicit retry instead of failing the whole screen.
-      setLoadMoreError(true);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [nextCursor, isLoadingMore, loadMoreError]);
+  // The synchronous ref guard makes end-reached and the coverage loop (below)
+  // single-flight: setState lands a frame late on 3G, too slow to stop a
+  // double trigger in the same tick.
+  const isLoadingMoreRef = useRef(false);
+  const loadMore = useCallback(
+    async (isRetry = false) => {
+      if (nextCursor === null || isLoadingMoreRef.current || (loadMoreError && !isRetry)) return;
+      isLoadingMoreRef.current = true;
+      setIsLoadingMore(true);
+      try {
+        const page = await appointmentsService.list({
+          scope: 'practitioner',
+          limit: PAGE_SIZE,
+          cursor: nextCursor,
+        });
+        setOlderPages((prev) => [...prev, ...page.data]);
+        setNextCursor(page.meta.nextCursor);
+      } catch {
+        // Best-effort pagination: the loaded history stays usable; the footer
+        // offers an explicit retry instead of failing the whole screen.
+        setLoadMoreError(true);
+      } finally {
+        isLoadingMoreRef.current = false;
+        setIsLoadingMore(false);
+      }
+    },
+    [nextCursor, loadMoreError],
+  );
 
   const retryLoadMore = useCallback(() => {
     setLoadMoreError(false);
@@ -278,6 +286,45 @@ export default function AgendaScreen() {
     return rows.map((appointment): AgendaItem => ({ kind: 'appointment', appointment }));
   }, [patched, dayKey, nowMs]);
 
+  // --- Window coverage (Review 013 MAJOR-1: window honesty) ------------------
+  // All four segments draw from ONE newest-first PAGE_SIZE window, and the
+  // backend's keyset pages are contiguous (desc startsAt, desc id) — so a Day
+  // older than the loaded window, or a near-term pending request pushed off
+  // page 1 by >50 far-future bookings, would otherwise render a FALSE
+  // "nothing here". A segment's absence claim is only honest once the window
+  // PROVABLY covers its filter; until then we cursor-fetch to coverage
+  // (usually one extra request) and keep the empty state withheld.
+  //
+  // Coverage tests (exact, given page contiguity):
+  // - Day: some loaded row starts on a clinic date strictly BEFORE the
+  //   selected day ⟺ the oldest loaded row starts before the day's 00:00 ⟹
+  //   every row of that day sorts above it and is already in hand.
+  // - Requests: pending decisions are always UPCOMING, so the window covers
+  //   them once its oldest row starts before `now` (the whole future is in
+  //   hand). Exhausting the cursor proves coverage trivially.
+  // The oldest row in hand (pages are contiguous desc-by-start, so it is the
+  // last element) drives both coverage tests below.
+  const oldestLoadedStartsAt = all.length > 0 ? all[all.length - 1].startsAt : null;
+  const dayCovered =
+    nextCursor === null || all.some((row) => clinicDateKey(row.startsAt) < dayKey);
+  const pendingCovered =
+    nextCursor === null ||
+    (oldestLoadedStartsAt !== null && Date.parse(oldestLoadedStartsAt) < nowMs);
+  const activeSegmentCovered =
+    segment === 'day' ? dayCovered : segment === 'pending' ? pendingCovered : true;
+
+  // Fetch-to-coverage: while the ACTIVE segment's filter is not covered, keep
+  // cursor-fetching. Re-runs after a refocus refetch too — the fresh first
+  // page resets the accumulation (above) and this closes the gap again, so a
+  // scrolled-then-refetched agenda can never silently re-open a false absence
+  // (Review 013 MINOR-9). A failed page keeps the loaded rows and the footer
+  // Retry; the loop resumes from the retry.
+  useEffect(() => {
+    if (!activeSegmentCovered && nextCursor !== null && !isLoadingMore && !loadMoreError) {
+      void loadMore();
+    }
+  }, [activeSegmentCovered, nextCursor, isLoadingMore, loadMoreError, loadMore]);
+
   const shown = useMemo<AgendaItem[]>(() => {
     switch (segment) {
       case 'pending':
@@ -296,7 +343,7 @@ export default function AgendaScreen() {
   const renderItem = useCallback(
     ({ item }: { item: AgendaItem }) => {
       if (item.kind === 'now') {
-        const time = formatClinicDate(nowMs, { timeStyle: 'short' });
+        const time = formatClinicDate(nowMs, { timeStyle: 'short' }, i18n.language);
         return (
           <View
             testID="agenda-now-marker"
@@ -333,7 +380,7 @@ export default function AgendaScreen() {
         />
       );
     },
-    [segment, inFlightId, inFlightAction, runRequestAction, pressDecline, nowMs, t, theme],
+    [segment, inFlightId, inFlightAction, runRequestAction, pressDecline, nowMs, t, i18n.language, theme],
   );
 
   // Stale-while-revalidate: a refocus refetch must keep the list mounted —
@@ -360,21 +407,25 @@ export default function AgendaScreen() {
   const emptyState = (() => {
     switch (segment) {
       case 'pending':
-        return (
+        // Window honesty (Review 013): the empty state is a factual claim —
+        // only render it once the window provably covers the segment.
+        // Uncovered, the FlatList footer already speaks (Spinner while the
+        // coverage fetch runs, Retry when it failed).
+        return pendingCovered ? (
           <EmptyState
             icon={<Ionicons name="mail-outline" size={48} color={theme.colors.textMuted} />}
             title={t('practice.pendingEmptyTitle')}
             message={t('practice.pendingEmptyMessage')}
           />
-        );
+        ) : null;
       case 'day':
-        return (
+        return dayCovered ? (
           <EmptyState
             icon={<Ionicons name="calendar-outline" size={48} color={theme.colors.textMuted} />}
-            title={t('practice.dayEmptyTitle', { date: formatDayKey(dayKey) })}
+            title={t('practice.dayEmptyTitle', { date: formatDayKey(dayKey, i18n.language) })}
             message={t('practice.dayEmptyMessage')}
           />
-        );
+        ) : null;
       case 'upcoming':
         return (
           <EmptyState
@@ -411,9 +462,13 @@ export default function AgendaScreen() {
       </View>
 
       <View style={styles.segments}>
+        {/* Primary navigation chips: two label lines so "Demandes" survives
+            OS font scaling × French (codified standard §7) — the pill's
+            minHeight touch target auto-heightens, never clips. */}
         <Chip
           testID="agenda-segment-pending"
           label={t('practice.segmentRequests')}
+          numberOfLines={2}
           selected={segment === 'pending'}
           onPress={() => setSegment('pending')}
           style={styles.segment}
@@ -421,6 +476,7 @@ export default function AgendaScreen() {
         <Chip
           testID="agenda-segment-day"
           label={t('practice.segmentDay')}
+          numberOfLines={2}
           selected={segment === 'day'}
           onPress={() => {
             setNowMs(Date.now());
@@ -431,6 +487,7 @@ export default function AgendaScreen() {
         <Chip
           testID="agenda-segment-upcoming"
           label={t('appointments.upcoming')}
+          numberOfLines={2}
           selected={segment === 'upcoming'}
           onPress={() => setSegment('upcoming')}
           style={styles.segment}
@@ -438,6 +495,7 @@ export default function AgendaScreen() {
         <Chip
           testID="agenda-segment-past"
           label={t('appointments.past')}
+          numberOfLines={2}
           selected={segment === 'past'}
           onPress={() => setSegment('past')}
           style={styles.segment}
@@ -484,10 +542,10 @@ export default function AgendaScreen() {
               />
               <View style={styles.dayLabelBox}>
                 <Text variant="subheading" align="center">
-                  {formatDayKey(dayKey)}
+                  {formatDayKey(dayKey, i18n.language)}
                 </Text>
                 <Text variant="caption" color="textMuted" align="center">
-                  {isToday ? t('practice.todayLabel') : weekdayOfDayKey(dayKey)}
+                  {isToday ? t('practice.todayLabel') : formatWeekdayKey(dayKey, i18n.language)}
                 </Text>
               </View>
               <IconButton

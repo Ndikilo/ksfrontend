@@ -437,7 +437,14 @@ export const en = {
       removeFile: 'Remove file',
       fileTooLarge: 'That file is larger than 25 MB. Choose a smaller one.',
       fileTypeUnsupported: 'That file type is not supported here.',
-      nothingSelected: 'Enter both numbers and attach all three documents to submit.',
+      // Blocked-submit copy names the ACTUAL missing set (Review 013): the
+      // fragments are joined with the locale's conjunction via Intl.ListFormat.
+      missingCmcNumber: 'your Cameroon Medical Council number',
+      missingNicNumber: 'your national ID card number',
+      missingDocCmc: 'the CMC registration certificate',
+      missingDocNic: 'the national ID card copy',
+      missingDocPhoto: 'the profile photo',
+      nothingSelected: 'Add {{missing}} to submit for verification.',
       submitCredentials: 'Submit for verification',
       pendingTitle: 'Your credentials are under review',
       pendingBody:
@@ -446,7 +453,9 @@ export const en = {
       pendingEditNote:
         'You can keep editing your public profile and availability while you wait.',
       rejectedTitle: 'Your credentials were not approved',
-      rejectedBody: 'Update your documents and numbers below, then send them again.',
+      // Standalone copy (Review 013): this body also renders when the form is
+      // hidden, so it must not say "below".
+      rejectedBody: 'Update your documents and numbers, then send them again.',
       resubmit: 'Update and re-submit',
       verifiedBody: 'Patients can find and book you.',
       notRegisteredTitle: 'Practitioner profile missing',

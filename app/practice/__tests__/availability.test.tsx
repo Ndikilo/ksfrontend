@@ -1,4 +1,4 @@
-import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor, within } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { Alert } from 'react-native';
 
@@ -111,9 +111,10 @@ const exceptionsPage = (data: AvailabilityException[]) => ({
   meta: { count: data.length, limit: data.length, nextCursor: null, hasNextPage: false },
 });
 
-// Same formatter the screen uses — locale-independent expectation.
+// Same formatter the screen uses — the screen passes the in-app language
+// explicitly (codified standard §7), 'en' under the test harness.
 const expectedDate = (key: string) =>
-  new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeZone: 'utc' }).format(
+  new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: 'utc' }).format(
     new Date(`${key}T12:00:00Z`),
   );
 
@@ -220,6 +221,41 @@ describe('Practitioner availability editor (P7.T2)', () => {
       await screen.findByText('This rule overlaps an existing rule on the same day.'),
     ).toBeTruthy();
     expect(mockReplaceRules).not.toHaveBeenCalled();
+  });
+
+  it('a failed rules save reopens the form prefilled with the entered values and the error inside', async () => {
+    const serverRule = { ...RULE, id: 'srv-wed', weekday: 3 };
+    mockReplaceRules.mockRejectedValueOnce({ status: 500, message: 'Boom', code: 'INTERNAL' });
+    const screen = renderScreen();
+    await screen.findByText('Monday');
+
+    fireEvent.press(screen.getByText('Add weekly rule'));
+    // Move the draft to Wednesday so it does not collide with RULE.
+    fireEvent.press(screen.getByTestId('rule-weekday-3'));
+    fireEvent.press(screen.getByTestId('rule-save'));
+
+    // The PUT failed — the entered draft must NOT be destroyed (Review 013
+    // MAJOR-2): the form is back, Wednesday is still selected, and the error
+    // Banner renders INSIDE the form card.
+    expect(await screen.findByTestId('rule-form')).toBeTruthy();
+    const form = screen.getByTestId('rule-form');
+    expect(within(form).getByText('Boom')).toBeTruthy();
+    const wednesday = within(form).getByTestId('rule-weekday-3');
+    expect(wednesday.props.accessibilityState?.selected).toBe(true);
+
+    // A corrected attempt succeeds: the PUT re-issues with the SAME draft
+    // (the full replace set: the existing Monday rule + the Wednesday draft)
+    // and the form closes for good.
+    mockReplaceRules.mockResolvedValue(rulesPage([serverRule]));
+    fireEvent.press(within(form).getByTestId('rule-save'));
+    await waitFor(() =>
+      expect(mockReplaceRules).toHaveBeenLastCalledWith([
+        expect.objectContaining({ weekday: 1 }),
+        expect.objectContaining({ weekday: 3, startTime: '09:00', endTime: '17:00' }),
+      ]),
+    );
+    expect(await screen.findByTestId('rule-card-srv-wed')).toBeTruthy();
+    expect(screen.queryByTestId('rule-form')).toBeNull();
   });
 
   it('deletes a rule only after a confirm dialog stating the booking consequence', async () => {
@@ -353,6 +389,38 @@ describe('Practitioner availability editor (P7.T2)', () => {
     // The optimistic temp card is replaced by the server row.
     expect(await screen.findByTestId('exception-card-srv-exc-1')).toBeTruthy();
     expect(mockDeleteException).not.toHaveBeenCalled();
+  });
+
+  it('a failed exception create reopens the form prefilled with the entered values and the error inside', async () => {
+    mockCreateException.mockRejectedValueOnce({ status: 500, message: 'Boom', code: 'INTERNAL' });
+    const screen = renderScreen();
+    await screen.findByText('Monday');
+
+    fireEvent.press(screen.getByTestId('availability-segment-exceptions'));
+    fireEvent.press(await screen.findByText('Add exception'));
+    // Present the native picker — the seam answers 2026-12-25 — then save.
+    fireEvent.press(screen.getByText('dd/mm/yyyy'));
+    await waitFor(() => expect(screen.getByText('25/12/2026')).toBeTruthy());
+    fireEvent.press(screen.getByTestId('exception-save'));
+
+    // The POST failed — the entered draft must NOT be destroyed (Review 013
+    // MAJOR-2): the form reopens with the picked date still in it and the
+    // error Banner rendered INSIDE the form card.
+    expect(await screen.findByTestId('exception-form')).toBeTruthy();
+    const form = screen.getByTestId('exception-form');
+    expect(within(form).getByText('Boom')).toBeTruthy();
+    expect(within(form).getByText('25/12/2026')).toBeTruthy();
+
+    // The retried save succeeds with the SAME draft and the form closes.
+    mockCreateException.mockResolvedValue({ ...BLOCKED_DAY, id: 'srv-exc-retry' });
+    fireEvent.press(within(form).getByTestId('exception-save'));
+    await waitFor(() =>
+      expect(mockCreateException).toHaveBeenLastCalledWith(
+        expect.objectContaining({ date: '2026-12-25', kind: 'blocked' }),
+      ),
+    );
+    expect(await screen.findByTestId('exception-card-srv-exc-retry')).toBeTruthy();
+    expect(screen.queryByTestId('exception-form')).toBeNull();
   });
 
   it('edits an exception by creating the replacement first, then deleting the old row', async () => {

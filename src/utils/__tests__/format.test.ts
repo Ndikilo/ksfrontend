@@ -1,4 +1,10 @@
-import { CLINIC_TIME_ZONE, clinicDateKey, formatClinicDate } from '../format';
+import {
+  CLINIC_TIME_ZONE,
+  clinicDateKey,
+  formatClinicDate,
+  formatDayKey,
+  formatWeekdayKey,
+} from '../format';
 
 // Pure formatting helpers — no React, no mocking. Day keys are locale-stable
 // (assembled from zoned numeric parts), so exact assertions are safe.
@@ -26,5 +32,30 @@ describe('clinic timezone formatting (P4.T1 E5)', () => {
       hourCycle: 'h23',
     });
     expect(hour).toBe('00:30');
+  });
+});
+
+// Review 013 MINOR-4 (standard §7): formatters take the locale EXPLICITLY —
+// the in-app language, never silently the device locale.
+describe('explicit-locale day-key formatting', () => {
+  it('formatDayKey renders the same UTC-noon calendar date in the requested locale', () => {
+    expect(formatDayKey('2030-01-14', 'en')).toBe('Jan 14, 2030');
+    expect(formatDayKey('2030-01-14', 'fr')).toBe('14 janv. 2030');
+  });
+
+  it('formatWeekdayKey names the weekday in the requested locale', () => {
+    expect(formatWeekdayKey('2030-01-14', 'en')).toBe('Monday');
+    expect(formatWeekdayKey('2030-01-14', 'fr')).toBe('lundi');
+  });
+
+  it('formatClinicDate accepts an explicit locale while keeping the pinned timezone', () => {
+    // 23:30 UTC is 00:30 Douala on the 11th — the fr short date must show the
+    // ROLLED-OVER Douala date, in fr day/month order.
+    expect(formatClinicDate('2026-06-10T23:30:00.000Z', { dateStyle: 'short' }, 'fr')).toBe(
+      '11/06/2026',
+    );
+    expect(formatClinicDate('2026-06-10T23:30:00.000Z', { dateStyle: 'short' }, 'en')).toBe(
+      '6/11/26',
+    );
   });
 });

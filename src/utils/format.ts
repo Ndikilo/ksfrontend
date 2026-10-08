@@ -13,11 +13,16 @@ export const initials = (name: string, max = 2): string =>
 export const truncate = (value: string, length: number): string =>
   value.length <= length ? value : `${value.slice(0, length - 1).trimEnd()}…`;
 
-/** Locale-aware date formatting with a sensible default. */
+/**
+ * Locale-aware date formatting with a sensible default. Call sites pass the
+ * in-app language explicitly (`i18n.language`) — the `undefined` device locale
+ * is only a fallback for callers outside the app shell (codified standard §7).
+ */
 export const formatDate = (
   value: string | number | Date,
   options: Intl.DateTimeFormatOptions = { dateStyle: 'medium' },
-): string => new Intl.DateTimeFormat(undefined, options).format(new Date(value));
+  locale?: string,
+): string => new Intl.DateTimeFormat(locale, options).format(new Date(value));
 
 /**
  * The clinic's timezone (design standard §5): every patient-facing appointment
@@ -44,11 +49,31 @@ export const clinicDateKey = (value: string | number | Date): string => {
   return `${get('year')}-${get('month')}-${get('day')}`;
 };
 
-/** Like `formatDate`, but pinned to the clinic timezone (see CLINIC_TIME_ZONE). */
+/** Like `formatDate`, but pinned to the clinic timezone (see CLINIC_TIME_ZONE).
+ *  Call sites pass `i18n.language` explicitly (codified standard §7). */
 export const formatClinicDate = (
   value: string | number | Date,
   options: Intl.DateTimeFormatOptions = { dateStyle: 'medium' },
-): string => new Intl.DateTimeFormat(undefined, { ...options, timeZone: CLINIC_TIME_ZONE }).format(new Date(value));
+  locale?: string,
+): string =>
+  new Intl.DateTimeFormat(locale, { ...options, timeZone: CLINIC_TIME_ZONE }).format(new Date(value));
+
+/**
+ * A `YYYY-MM-DD` day key rendered at UTC noon — the same calendar date on
+ * every device. Shared by the agenda's day navigator and the availability
+ * editor (one implementation, not per-screen copies). Pass the in-app
+ * language explicitly (`i18n.language`).
+ */
+export const formatDayKey = (key: string, locale?: string): string =>
+  new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'utc' }).format(
+    new Date(`${key}T12:00:00Z`),
+  );
+
+/** Long weekday name of a `YYYY-MM-DD` key, in the given locale. */
+export const formatWeekdayKey = (key: string, locale?: string): string =>
+  new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: 'utc' }).format(
+    new Date(`${key}T12:00:00Z`),
+  );
 
 export const capitalize = (value: string): string =>
   value.charAt(0).toUpperCase() + value.slice(1);

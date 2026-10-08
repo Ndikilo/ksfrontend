@@ -23,6 +23,7 @@ import {
 import { CONSULTATION_TYPE_KEYS } from '@/constants';
 import { useAsync, useMutation } from '@/hooks';
 import { useTheme } from '@/theme';
+import { formatDayKey } from '@/utils';
 import type {
   AvailabilityException,
   AvailabilityExceptionInput,
@@ -118,12 +119,6 @@ const fromDateKey = (key: string): Date => {
   return new Date(year, month - 1, day);
 };
 
-/** A `YYYY-MM-DD` key rendered at UTC noon — the same calendar date on every device. */
-const formatDateKey = (key: string): string =>
-  new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeZone: 'utc' }).format(
-    new Date(`${key}T12:00:00Z`),
-  );
-
 /** Monday-first display order; `HH:MM` strings sort chronologically. */
 const sortRules = (rules: AvailabilityRule[]): AvailabilityRule[] =>
   [...rules].sort(
@@ -197,7 +192,7 @@ const DEFAULT_EXCEPTION_DRAFT: ExceptionDraft = {
 
 export default function AvailabilityScreen() {
   const theme = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [segment, setSegment] = useState<Segment>('rules');
 
   const rulesState = useAsync(() => availabilityService.listRules(), []);
@@ -244,7 +239,7 @@ export default function AvailabilityScreen() {
   const rulesPending = saveRules.isLoading;
 
   const applyRules = useCallback(
-    async (next: AvailabilityRule[], pendingId: ID | null) => {
+    async (next: AvailabilityRule[], pendingId: ID | null): Promise<boolean> => {
       const previous = rules ?? [];
       busyRef.current = true;
       setRules(next);
@@ -257,6 +252,7 @@ export default function AvailabilityScreen() {
       else setRules(sortRules(page.data));
       busyRef.current = false;
       setPendingRuleId(null);
+      return page !== null;
     },
     [rules, saveRules],
   );
@@ -286,7 +282,7 @@ export default function AvailabilityScreen() {
     setRuleErrors({});
   }, []);
 
-  const submitRule = useCallback(() => {
+  const submitRule = useCallback(async () => {
     if (ruleDraft === null) return;
     const errors: RuleFormErrors = {};
     if (ruleDraft.endTime <= ruleDraft.startTime) {
@@ -308,8 +304,9 @@ export default function AvailabilityScreen() {
     // The PUT replaces the whole set: add appends an optimstic row (client
     // id), edit patches the existing one. New server ids arrive in the
     // response and replace both.
+    const draft = ruleDraft;
     const optimistic: AvailabilityRule = {
-      ...ruleDraft,
+      ...draft,
       locationId: null,
       timezone: 'Africa/Douala',
       id: editingRuleId ?? nextTempId('rule'),
@@ -319,7 +316,12 @@ export default function AvailabilityScreen() {
         ? [...(rules ?? []), optimistic]
         : (rules ?? []).map((rule) => (rule.id === editingRuleId ? optimistic : rule));
     closeRuleForm();
-    void applyRules(sortRules(next), optimistic.id);
+    const saved = await applyRules(sortRules(next), optimistic.id);
+    // Form-failure preservation (codified standard §7): the form closed for
+    // the in-flight save, but the draft is NEVER destroyed by a failure — it
+    // reopens prefilled with the entered values and the error Banner inside.
+    // It clears on success only.
+    if (!saved) setRuleDraft(draft);
   }, [ruleDraft, rules, editingRuleId, applyRules, closeRuleForm, t]);
 
   const confirmDeleteRule = useCallback(
@@ -399,6 +401,7 @@ export default function AvailabilityScreen() {
     }
 
     const input = draftToExceptionInput(exceptionDraft);
+    const draft = exceptionDraft;
     const previous = exceptions ?? [];
     const tempId = nextTempId('exception');
     const optimistic: AvailabilityException = { ...input, id: tempId };
@@ -422,6 +425,10 @@ export default function AvailabilityScreen() {
       setExceptions(previous); // rollback
       busyRef.current = false;
       setPendingExceptionId(null);
+      // Form-failure preservation (codified standard §7): the failed save
+      // must not destroy the entered values — the form reopens prefilled
+      // with the error Banner inside. It clears on success only.
+      setExceptionDraft(draft);
       return;
     }
     setExceptions(
@@ -526,16 +533,26 @@ export default function AvailabilityScreen() {
       <>
         {/* Refetch failure while stale rows stay mounted must be visible, not
             silent (the patient-tab pattern, codified standard §2). The
-            first-load failure is the ErrorState branch above. */}
+            first-load failure is the ErrorState branch above. A failed SAVE
+            renders inside the reopened form instead (form-failure
+            preservation) — this outer Banner covers deletes and the
+            closed-form case. */}
         {rulesState.error ? (
           <Banner tone="error" message={rulesState.error.message} style={styles.banner} />
         ) : null}
-        {saveRules.error ? (
+        {saveRules.error && ruleDraft === null ? (
           <Banner tone="error" message={saveRules.error.message} style={styles.banner} />
         ) : null}
 
         {ruleDraft !== null ? (
           <Card testID="rule-form">
+            {saveRules.error ? (
+              <Banner
+                tone="error"
+                message={saveRules.error.message}
+                style={styles.formBanner}
+              />
+            ) : null}
             <FieldLabel label={t('practice.form.weekday')} required />
             <View style={styles.chipWrap}>
               {WEEKDAY_ORDER.map((day) => (
@@ -638,7 +655,7 @@ export default function AvailabilityScreen() {
               <Button
                 testID="rule-save"
                 title={t('practice.save')}
-                onPress={submitRule}
+                onPress={() => void submitRule()}
                 style={styles.fieldFlex}
               />
               <Button
@@ -702,10 +719,10 @@ export default function AvailabilityScreen() {
                   <Text variant="caption" color="textMuted">
                     {[
                       rule.validFrom !== null
-                        ? t('practice.effectiveFrom', { date: formatDateKey(rule.validFrom) })
+                        ? t('practice.effectiveFrom', { date: formatDayKey(rule.validFrom, i18n.language) })
                         : null,
                       rule.validTo !== null
-                        ? t('practice.effectiveUntil', { date: formatDateKey(rule.validTo) })
+                        ? t('practice.effectiveUntil', { date: formatDayKey(rule.validTo, i18n.language) })
                         : null,
                     ]
                       .filter(Boolean)
@@ -746,11 +763,14 @@ export default function AvailabilityScreen() {
 
     return (
       <>
-        {/* Same stale-refetch rule for the exceptions list. */}
+        {/* Same stale-refetch rule for the exceptions list. A failed CREATE
+            renders inside the reopened form instead (form-failure
+            preservation); this outer Banner covers deletes and the
+            closed-form case. */}
         {exceptionsState.error ? (
           <Banner tone="error" message={exceptionsState.error.message} style={styles.banner} />
         ) : null}
-        {createException.error || deleteExceptionMutation.error ? (
+        {(createException.error || deleteExceptionMutation.error) && exceptionDraft === null ? (
           <Banner
             tone="error"
             message={
@@ -769,6 +789,13 @@ export default function AvailabilityScreen() {
 
         {exceptionDraft !== null ? (
           <Card testID="exception-form">
+            {createException.error ? (
+              <Banner
+                tone="error"
+                message={createException.error.message}
+                style={styles.formBanner}
+              />
+            ) : null}
             <DateField
               label={t('practice.form.date')}
               required
@@ -908,7 +935,7 @@ export default function AvailabilityScreen() {
             {(exceptions ?? []).map((row) => (
               <Card key={row.id} testID={`exception-card-${row.id}`}>
                 <View style={styles.cardHeader}>
-                  <Text variant="subheading">{formatDateKey(row.date)}</Text>
+                  <Text variant="subheading">{formatDayKey(row.date, i18n.language)}</Text>
                   {pendingExceptionId === row.id && exceptionsPending ? (
                     <Spinner />
                   ) : (
@@ -918,7 +945,7 @@ export default function AvailabilityScreen() {
                         variant="ghost"
                         size={20}
                         disabled={exceptionsPending}
-                        accessibilityLabel={`${t('practice.editException')} — ${formatDateKey(row.date)}`}
+                        accessibilityLabel={`${t('practice.editException')} — ${formatDayKey(row.date, i18n.language)}`}
                         onPress={() => openEditException(row)}
                       />
                       <IconButton
@@ -927,7 +954,7 @@ export default function AvailabilityScreen() {
                         size={20}
                         disabled={exceptionsPending}
                         color={theme.colors.dangerText}
-                        accessibilityLabel={`${t('practice.deleteException')} — ${formatDateKey(row.date)}`}
+                        accessibilityLabel={`${t('practice.deleteException')} — ${formatDayKey(row.date, i18n.language)}`}
                         onPress={() => confirmDeleteException(row)}
                       />
                     </View>
@@ -982,9 +1009,12 @@ export default function AvailabilityScreen() {
       </View>
 
       <View style={styles.segments}>
+        {/* Primary navigation chips: two label lines so the labels survive
+            OS font scaling × French (codified standard §7). */}
         <Chip
           testID="availability-segment-rules"
           label={t('practice.segmentRules')}
+          numberOfLines={2}
           selected={segment === 'rules'}
           onPress={() => setSegment('rules')}
           style={styles.segment}
@@ -992,6 +1022,7 @@ export default function AvailabilityScreen() {
         <Chip
           testID="availability-segment-exceptions"
           label={t('practice.segmentExceptions')}
+          numberOfLines={2}
           selected={segment === 'exceptions'}
           onPress={() => setSegment('exceptions')}
           style={styles.segment}
@@ -1009,6 +1040,7 @@ const styles = StyleSheet.create({
   segments: { flexDirection: 'row', gap: 8 },
   segment: { flex: 1 },
   banner: { marginBottom: 12 },
+  formBanner: { marginBottom: 12 },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   fieldRow: { flexDirection: 'row', gap: 8 },
   fieldFlex: { flex: 1 },

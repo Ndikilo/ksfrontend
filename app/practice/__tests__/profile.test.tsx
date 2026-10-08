@@ -200,6 +200,20 @@ describe('Verification pending state (P7.T4)', () => {
     // The re-submit path is the form itself.
     expect(screen.getByText('Submit for verification')).toBeTruthy();
   });
+
+  it('a rejected profile without re-submit rights shows the standalone body (Review 013: no "below" when the form is hidden)', async () => {
+    mockGetVerification.mockResolvedValue(
+      verification({ status: 'rejected', canResubmit: false }),
+    );
+    const screen = renderScreen();
+
+    expect(await screen.findByText('Not approved')).toBeTruthy();
+    // The body stands alone — the form it used to point at is NOT rendered.
+    expect(
+      screen.getByText('Update your documents and numbers, then send them again.'),
+    ).toBeTruthy();
+    expect(screen.queryByText('Submit for verification')).toBeNull();
+  });
 });
 
 describe('Credentials submission (P7.T4)', () => {
@@ -217,7 +231,34 @@ describe('Credentials submission (P7.T4)', () => {
 
     fireEvent.press(screen.getByText('Submit for verification'));
 
-    expect(await screen.findByText('Enter both numbers and attach all three documents to submit.')).toBeTruthy();
+    // The message names the WHOLE missing set (Review 013 MINOR-7), joined
+    // with the locale's conjunction.
+    expect(
+      await screen.findByText(
+        'Add your Cameroon Medical Council number, your national ID card number, the CMC registration certificate, the national ID card copy, and the profile photo to submit for verification.',
+      ),
+    ).toBeTruthy();
+    expect(mockSubmitCredentials).not.toHaveBeenCalled();
+  });
+
+  it('the blocked-submit message names only what is actually missing', async () => {
+    const screen = renderScreen();
+    await screen.findByText('Action needed');
+
+    // Only the CMC number is entered — the message must not demand it again.
+    fireEvent.changeText(
+      screen.getByLabelText('Cameroon Medical Council number'),
+      'CMC-2024-01234',
+    );
+    fireEvent.press(screen.getByText('Submit for verification'));
+
+    expect(
+      await screen.findByText(
+        'Add your national ID card number, the CMC registration certificate, the national ID card copy, and the profile photo to submit for verification.',
+      ),
+    ).toBeTruthy();
+    // The exact match above already proves the CMC number is NOT demanded
+    // again — the message names only the missing remainder.
     expect(mockSubmitCredentials).not.toHaveBeenCalled();
   });
 
@@ -285,6 +326,42 @@ describe('Credentials submission (P7.T4)', () => {
     await waitFor(() => expect(mockUpload).toHaveBeenCalledTimes(1));
     // The row settles: the failed copy is gone, the file name is back.
     await waitFor(() => expect(screen.queryByText('Upload failed.')).toBeNull());
+  });
+
+  it('the remove control stays available during an upload and the late response cannot resurrect the row', async () => {
+    let resolvePresign: (value: { url: string; key: string }) => void = () => {};
+    mockPresign.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePresign = resolve;
+      }),
+    );
+    const screen = renderScreen();
+    await screen.findByText('Action needed');
+
+    fireEvent.press(screen.getAllByText('Choose file')[0]);
+
+    // Uploading: the remove control is STILL rendered next to the spinner
+    // (Review 013 MINOR-6 — a cancel path is never hidden mid-upload).
+    expect(
+      await screen.findByLabelText('Remove file — CMC registration certificate'),
+    ).toBeTruthy();
+
+    // Removing mid-upload discards the picked file and returns the row to idle.
+    fireEvent.press(screen.getByLabelText('Remove file — CMC registration certificate'));
+    await waitFor(() => expect(screen.getAllByText('Choose file').length).toBe(3));
+
+    // The in-flight round-trip resolves afterwards — the sequence guard keeps
+    // its late response from resurrecting the removed row.
+    await act(async () => {
+      resolvePresign({ url: 'https://storage.example/u', key: 'key-late' });
+    });
+    await act(async () => {});
+    expect(screen.queryByText('certificate.pdf')).toBeNull();
+    expect(screen.getAllByText('Choose file').length).toBe(3);
+
+    // And nothing was silently kept: submitting stays blocked.
+    fireEvent.press(screen.getByText('Submit for verification'));
+    expect(mockSubmitCredentials).not.toHaveBeenCalled();
   });
 
   it('a rejected submission surfaces the failure Banner over the form', async () => {

@@ -171,3 +171,27 @@ Reviewer walks sections 1–5 with file:line evidence and severity
 `FAIL` (any BLOCKER/MAJOR — must list concrete fixes). Anything only verifiable
 on hardware (gesture feel, keyboard timing) is listed under `DEVICE-CHECK:` and
 tracked in the user-action registry before store submission.
+
+## 7. Window honesty, form preservation, format locale, nav-chip scaling (Review 013)
+
+- Window honesty: a filtered view over a paginated window never asserts
+  absence unless the window provably covers the filter — fetch-to-coverage
+  (keep cursor-fetching until the loaded range spans the filter) or scoped
+  empty copy. Keyset pages are contiguous, so "oldest loaded row is past the
+  filter's lower bound" (or an exhausted cursor) is the exact coverage test;
+  an empty state inside a 50-row window is a factual claim, and a refocus
+  refetch must re-run the coverage fetch so the gap cannot re-open.
+- Form-failure preservation: closing a form must never destroy unsaved input
+  while its save is in flight. On failure the draft returns to the user
+  prefilled, with the error Banner rendered INSIDE the form (VerificationCard's
+  kept-file-with-Retry is the reference pattern); the draft clears on success
+  only.
+- Format locale: every `Intl` formatter takes `i18n.language` explicitly —
+  the device locale applies only where the user has not chosen in-app.
+  Locale grammar (list conjunctions) goes through `Intl` with that same
+  explicit locale, never hand-built separators.
+- Nav-chip scaling: primary navigation chips (segment tabs) survive OS font
+  scaling × French expansion — a 2-line clamp (`numberOfLines={2}`) or
+  shorter labels; `numberOfLines={1}` is for secondary chips only. Growing a
+  pill's line count is safe: its touch target is a `minHeight`, so the
+  container auto-heightens instead of clipping.

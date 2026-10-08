@@ -133,7 +133,10 @@ beforeEach(() => {
 afterEach(async () => {
   // Drain VirtualizedList's pending `_updateCellsToRender` macrotask INSIDE
   // act — otherwise it fires during the NEXT test's render and produces a
-  // spurious "not wrapped in act" warning (act hygiene, qc-008 rule).
+  // spurious "not wrapped in act" warning (act hygiene, qc-008 rule). (The
+  // remaining teardown noise — this list re-scheduling `_updateCellsToRender`
+  // after unmount — reproduces on the untouched baseline and is left as the
+  // known pre-existing VirtualizedList issue, Review 013 MINOR-10.)
   await act(async () => {});
 });
 
@@ -539,5 +542,171 @@ describe('Incoming requests + day view (P7.T3)', () => {
     // The failure is VISIBLE, the stale request stays mounted (standard §2).
     expect(await screen.findByText('No connection.')).toBeTruthy();
     expect(screen.getByTestId('appointment-row-apt-pending-1')).toBeTruthy();
+  });
+});
+
+describe('Window coverage (Review 013 MAJOR-1 + MINOR-9)', () => {
+  const NOW = Date.parse('2030-01-15T10:00:00.000Z');
+  // A window whose oldest row is still inside the near future: a Day on the
+  // 14th (or the Requests segment) is NOT covered by page 1 alone — every row
+  // here sorts above the 14th, so absence on it is not yet provable.
+  const FAR_FUTURE: Appointment = {
+    ...UPCOMING,
+    id: 'apt-far-future',
+    startsAt: '2030-01-16T09:00:00.000Z',
+    endsAt: '2030-01-16T10:00:00.000Z',
+  };
+  // Still ahead at NOW (starts 11:00) and on the 15th — the window's oldest row.
+  const TODAY_ROW: Appointment = {
+    ...UPCOMING,
+    id: 'apt-today',
+    startsAt: '2030-01-15T11:00:00.000Z',
+    endsAt: '2030-01-15T12:00:00.000Z',
+  };
+  const windowPage = () =>
+    page([FAR_FUTURE, TODAY_ROW], { nextCursor: 'cursor-1', hasNextPage: true });
+
+  beforeEach(() => {
+    // Pin "today" to the 15th so the day navigator starts there (the tests
+    // step back to the 14th, older than every loaded row).
+    jest.spyOn(Date, 'now').mockReturnValue(NOW);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('a Day older than the loaded window fetches to coverage before saying the day is empty', async () => {
+    mockList
+      .mockResolvedValueOnce(windowPage())
+      .mockResolvedValueOnce(page([PAST_DONE])); // page 2 reaches 2020 — covers the 14th
+    const screen = renderScreen();
+    await screen.findByTestId('appointment-row-apt-today');
+
+    fireEvent.press(screen.getByTestId('agenda-segment-day'));
+    fireEvent.press(screen.getByLabelText('Previous day')); // 2030-01-14
+
+    // Fetch-to-coverage: page 2 is pulled WITHOUT waiting for a scroll…
+    await waitFor(() =>
+      expect(mockList).toHaveBeenLastCalledWith({
+        scope: 'practitioner',
+        limit: 50,
+        cursor: 'cursor-1',
+      }),
+    );
+    // …and only once the window provably covers the 14th does the empty
+    // state render — the honest answer, not a 50-row-window artefact.
+    expect(await screen.findByText('No appointments on Jan 14, 2030')).toBeTruthy();
+  });
+
+  it('withholds the day empty state while the coverage fetch is still running', async () => {
+    mockList.mockResolvedValueOnce(windowPage()).mockReturnValueOnce(
+      new Promise<CursorPage<Appointment>>(() => {}),
+    );
+    const screen = renderScreen();
+    await screen.findByTestId('appointment-row-apt-today');
+
+    fireEvent.press(screen.getByTestId('agenda-segment-day'));
+    fireEvent.press(screen.getByLabelText('Previous day'));
+
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
+    // Uncovered: NO empty claim — the footer spinner speaks instead.
+    expect(screen.queryByText(/No appointments on/)).toBeNull();
+    expect(screen.UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+  });
+
+  it('a failed coverage fetch offers Retry and still never shows the false day-empty state', async () => {
+    mockList
+      .mockResolvedValueOnce(windowPage())
+      .mockRejectedValueOnce({ status: 0, code: 'OFFLINE', message: 'No connection.' });
+    const screen = renderScreen();
+    await screen.findByTestId('appointment-row-apt-today');
+
+    fireEvent.press(screen.getByTestId('agenda-segment-day'));
+    fireEvent.press(screen.getByLabelText('Previous day'));
+
+    expect(await screen.findByText('Try again')).toBeTruthy();
+    expect(screen.queryByText(/No appointments on/)).toBeNull();
+
+    // The retried page completes the coverage fetch → the honest empty state.
+    mockList.mockResolvedValue(page([PAST_DONE]));
+    fireEvent.press(screen.getByText('Try again'));
+    expect(await screen.findByText('No appointments on Jan 14, 2030')).toBeTruthy();
+    // Mount + failed coverage + retry = 3 (standard §2: pin the new call).
+    expect(mockList).toHaveBeenCalledTimes(3);
+  });
+
+  it('the Requests segment fetches past far-future bookings before saying no new requests', async () => {
+    // A near-term request pushed off page 1 by the far-future booking; the
+    // same page reaches before now (2020), completing coverage in one step.
+    const NEAR_PENDING: Appointment = {
+      ...PENDING,
+      id: 'apt-pending-near',
+      startsAt: '2030-01-15T10:30:00.000Z',
+      endsAt: '2030-01-15T11:30:00.000Z',
+    };
+    mockList
+      .mockResolvedValueOnce(windowPage())
+      .mockResolvedValueOnce(page([NEAR_PENDING, PAST_DONE]));
+    const screen = renderScreen();
+    await screen.findByTestId('appointment-row-apt-today');
+
+    fireEvent.press(screen.getByTestId('agenda-segment-pending'));
+
+    // Page 1 holds no pending request — but it also does not reach before
+    // now, so absence is NOT provable: page 2 is fetched automatically…
+    await waitFor(() =>
+      expect(mockList).toHaveBeenLastCalledWith({
+        scope: 'practitioner',
+        limit: 50,
+        cursor: 'cursor-1',
+      }),
+    );
+    // …and the request that had fallen off the window appears.
+    expect(await screen.findByTestId('appointment-row-apt-pending-near')).toBeTruthy();
+    expect(screen.getByText('Burma Tabi')).toBeTruthy();
+  });
+
+  it('an empty Requests segment is only claimed once the window reaches before now', async () => {
+    mockList
+      .mockResolvedValueOnce(windowPage())
+      .mockResolvedValueOnce(page([PAST_DONE])); // oldest row is in 2020 — before now
+
+    const screen = renderScreen();
+    await screen.findByTestId('appointment-row-apt-today');
+    fireEvent.press(screen.getByTestId('agenda-segment-pending'));
+
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
+    // Covered (the whole future is in hand) → the empty claim is now honest.
+    expect(await screen.findByText('No new requests')).toBeTruthy();
+  });
+
+  it('a re-focus refetch re-runs the coverage fetch so the gap cannot re-open (MINOR-9)', async () => {
+    mockList
+      .mockResolvedValueOnce(windowPage())
+      // Coverage page 2 keeps a cursor — the agenda is deeper than one page.
+      .mockResolvedValueOnce(page([PAST_DONE], { nextCursor: 'cursor-2', hasNextPage: true }))
+      // The refocus refetch: a FRESH first page that again misses the day.
+      .mockResolvedValueOnce(windowPage())
+      .mockResolvedValueOnce(page([PAST_DONE]));
+
+    const screen = renderScreen();
+    await screen.findByTestId('appointment-row-apt-today');
+    fireEvent.press(screen.getByTestId('agenda-segment-day'));
+    fireEvent.press(screen.getByLabelText('Previous day'));
+    expect(await screen.findByText('No appointments on Jan 14, 2030')).toBeTruthy();
+    expect(mockList).toHaveBeenCalledTimes(2);
+
+    act(() => mockOnRefocus?.());
+
+    // The fresh first page reset the accumulation — the coverage fetch
+    // re-runs (calls 3 + 4) instead of leaving the day falsely empty.
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(4));
+    expect(mockList).toHaveBeenNthCalledWith(4, {
+      scope: 'practitioner',
+      limit: 50,
+      cursor: 'cursor-1',
+    });
+    expect(await screen.findByText('No appointments on Jan 14, 2030')).toBeTruthy();
   });
 });

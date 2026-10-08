@@ -16,17 +16,31 @@ export type ChipProps = Omit<PressableProps, 'style' | 'children' | 'disabled'> 
   /** Selected chips fill with the primary color and announce the state. */
   selected?: boolean;
   disabled?: boolean;
+  /**
+   * Label line clamp. Default 1 (secondary choice chips); PRIMARY navigation
+   * chips (segment tabs) pass 2 so the label survives OS font scaling ×
+   * French expansion (codified standard §7) — the pill's `minHeight` touch
+   * target auto-heightens, so a second line never clips.
+   */
+  numberOfLines?: number;
   style?: ViewStyle;
 };
 
 /**
  * Selectable pill for compact choice rows (day pickers, time slots, quick
- * categories). Token-driven like Button, with pressed feedback, a 48dp touch
- * target, and `selected` exposed to screen readers via `accessibilityState`.
- * Pass `accessibilityLabel` for a richer announcement than the visible label
- * (e.g. time + consultation type + selection state).
+ * categories, segment tabs). Token-driven like Button, with pressed feedback,
+ * a 48dp touch target, and `selected` exposed to screen readers via
+ * `accessibilityState`. Pass `accessibilityLabel` for a richer announcement
+ * than the visible label (e.g. time + consultation type + selection state).
  */
-export function Chip({ label, selected = false, disabled = false, style, ...rest }: ChipProps) {
+export function Chip({
+  label,
+  selected = false,
+  disabled = false,
+  numberOfLines = 1,
+  style,
+  ...rest
+}: ChipProps) {
   const theme = useTheme();
   const container = useMemo(
     () => [
@@ -55,7 +69,11 @@ export function Chip({ label, selected = false, disabled = false, style, ...rest
       ]}
       {...rest}
     >
-      <Text variant="label" color={selected ? 'onPrimary' : 'text'} numberOfLines={1}>
+      <Text
+        variant="label"
+        color={selected ? 'onPrimary' : 'text'}
+        numberOfLines={numberOfLines}
+      >
         {label}
       </Text>
     </Pressable>
