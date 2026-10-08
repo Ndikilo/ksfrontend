@@ -299,19 +299,20 @@ export default function AgendaScreen() {
   // - Day: some loaded row starts on a clinic date strictly BEFORE the
   //   selected day ⟺ the oldest loaded row starts before the day's 00:00 ⟹
   //   every row of that day sorts above it and is already in hand.
-  // - Requests: pending decisions are always UPCOMING, so the window covers
-  //   them once its oldest row starts before `now` (the whole future is in
-  //   hand). Exhausting the cursor proves coverage trivially.
+  // - Requests / Upcoming / Past: once the window's oldest row starts before
+  //   `now`, the whole future is in hand — so pending decisions and upcoming
+  //   bookings cannot hide beyond it, and at least one past row exists (a
+  //   "no past appointments" claim would be false). Exhausting the cursor
+  //   proves coverage trivially for every segment.
   // The oldest row in hand (pages are contiguous desc-by-start, so it is the
-  // last element) drives both coverage tests below.
+  // last element) drives the coverage tests below.
   const oldestLoadedStartsAt = all.length > 0 ? all[all.length - 1].startsAt : null;
   const dayCovered =
     nextCursor === null || all.some((row) => clinicDateKey(row.startsAt) < dayKey);
-  const pendingCovered =
+  const futureCovered =
     nextCursor === null ||
     (oldestLoadedStartsAt !== null && Date.parse(oldestLoadedStartsAt) < nowMs);
-  const activeSegmentCovered =
-    segment === 'day' ? dayCovered : segment === 'pending' ? pendingCovered : true;
+  const activeSegmentCovered = segment === 'day' ? dayCovered : futureCovered;
 
   // Fetch-to-coverage: while the ACTIVE segment's filter is not covered, keep
   // cursor-fetching. Re-runs after a refocus refetch too — the fresh first
@@ -411,7 +412,7 @@ export default function AgendaScreen() {
         // only render it once the window provably covers the segment.
         // Uncovered, the FlatList footer already speaks (Spinner while the
         // coverage fetch runs, Retry when it failed).
-        return pendingCovered ? (
+        return futureCovered ? (
           <EmptyState
             icon={<Ionicons name="mail-outline" size={48} color={theme.colors.textMuted} />}
             title={t('practice.pendingEmptyTitle')}
@@ -427,21 +428,21 @@ export default function AgendaScreen() {
           />
         ) : null;
       case 'upcoming':
-        return (
+        return futureCovered ? (
           <EmptyState
             icon={<Ionicons name="calendar-outline" size={48} color={theme.colors.textMuted} />}
             title={t('practice.upcomingEmptyTitle')}
             message={t('practice.upcomingEmptyMessage')}
           />
-        );
+        ) : null;
       case 'past':
-        return (
+        return futureCovered ? (
           <EmptyState
             icon={<Ionicons name="time-outline" size={48} color={theme.colors.textMuted} />}
             title={t('practice.pastEmptyTitle')}
             message={t('practice.pastEmptyMessage')}
           />
-        );
+        ) : null;
     }
   })();
 

@@ -270,6 +270,7 @@ function PractitionerResultCard({
   onPress: () => void;
 }) {
   const theme = useTheme();
+  const { i18n } = useTranslation();
   const fullName = [item.prefix, item.givenNames, item.surname].filter(Boolean).join(' ');
 
   return (
@@ -298,7 +299,11 @@ function PractitionerResultCard({
             ) : null}
             {item.nextAvailableAt ? (
               <Text variant="caption" style={{ color: theme.colors.success }} numberOfLines={1}>
-                {formatDate(item.nextAvailableAt, { dateStyle: 'medium', timeStyle: 'short' })}
+                {formatDate(
+                  item.nextAvailableAt,
+                  { dateStyle: 'medium', timeStyle: 'short' },
+                  i18n.language,
+                )}
               </Text>
             ) : null}
           </View>

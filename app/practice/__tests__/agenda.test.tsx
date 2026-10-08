@@ -220,13 +220,20 @@ describe('Practitioner agenda (P7.T1)', () => {
   });
 
   it('loads the next cursor page on end reached (history is never capped)', async () => {
+    // Page 1 already reaches before now (PAST_DONE), so the coverage loop is
+    // satisfied at mount — the next page loads ONLY via end-reached.
     mockList.mockResolvedValue(
-      page([UPCOMING], { nextCursor: 'cursor-1', hasNextPage: true }),
+      page([UPCOMING, PAST_DONE], { nextCursor: 'cursor-1', hasNextPage: true }),
     );
     const screen = renderScreen();
     await screen.findByTestId('appointment-row-apt-1');
 
-    mockList.mockResolvedValue(page([PAST_DONE]));
+    const OLDER_DONE: Appointment = {
+      ...PAST_DONE,
+      id: 'apt-2-older',
+      startsAt: '2019-06-01T09:00:00.000Z',
+    };
+    mockList.mockResolvedValue(page([OLDER_DONE]));
     const list = screen.UNSAFE_getByType(FlatList);
     act(() => list.props.onEndReached?.());
 
@@ -239,11 +246,14 @@ describe('Practitioner agenda (P7.T1)', () => {
     );
     fireEvent.press(screen.getByTestId('agenda-segment-past'));
     expect(await screen.findByTestId('appointment-row-apt-2')).toBeTruthy();
+    expect(screen.getByTestId('appointment-row-apt-2-older')).toBeTruthy();
   });
 
   it('a failed page load keeps the loaded history and offers a retry', async () => {
+    // Coverage-complete first page (see the test above): the failure under
+    // test is the END-REACHED page load, not the mount fetch.
     mockList.mockResolvedValue(
-      page([UPCOMING], { nextCursor: 'cursor-1', hasNextPage: true }),
+      page([UPCOMING, PAST_DONE], { nextCursor: 'cursor-1', hasNextPage: true }),
     );
     const screen = renderScreen();
     await screen.findByTestId('appointment-row-apt-1');
@@ -256,7 +266,12 @@ describe('Practitioner agenda (P7.T1)', () => {
     // The first page's rows are still mounted.
     expect(screen.getByTestId('appointment-row-apt-1')).toBeTruthy();
 
-    mockList.mockResolvedValue(page([PAST_DONE]));
+    const OLDER_DONE: Appointment = {
+      ...PAST_DONE,
+      id: 'apt-2-older',
+      startsAt: '2019-06-01T09:00:00.000Z',
+    };
+    mockList.mockResolvedValue(page([OLDER_DONE]));
     fireEvent.press(screen.getByText('Try again'));
     // The retry must issue a NEW call (standard §2): toHaveBeenCalledWith
     // alone is vacuous — it matches the FAILED call already in history.
@@ -267,9 +282,9 @@ describe('Practitioner agenda (P7.T1)', () => {
       limit: 50,
       cursor: 'cursor-1',
     });
-    // And the retried page actually loaded: the past segment gains apt-2.
+    // And the retried page actually loaded: the past segment gains the older row.
     fireEvent.press(screen.getByTestId('agenda-segment-past'));
-    expect(await screen.findByTestId('appointment-row-apt-2')).toBeTruthy();
+    expect(await screen.findByTestId('appointment-row-apt-2-older')).toBeTruthy();
   });
 
   it('a re-focus refetch keeps the list mounted (stale-while-revalidate)', async () => {
@@ -679,6 +694,50 @@ describe('Window coverage (Review 013 MAJOR-1 + MINOR-9)', () => {
     await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
     // Covered (the whole future is in hand) → the empty claim is now honest.
     expect(await screen.findByText('No new requests')).toBeTruthy();
+  });
+
+  it('the Upcoming segment fetches past far-future bookings so the nearest booking is not hidden', async () => {
+    // Upcoming is the DEFAULT segment: with >50 far-future bookings the first
+    // page holds only the far end of the horizon, and tomorrow's booking sorts
+    // below it — the nearest, most actionable row must not be missing.
+    const NEAR_UPCOMING: Appointment = {
+      ...UPCOMING,
+      id: 'apt-upcoming-near',
+      startsAt: '2030-01-15T11:00:00.000Z',
+      endsAt: '2030-01-15T12:00:00.000Z',
+    };
+    mockList
+      .mockResolvedValueOnce(windowPage())
+      .mockResolvedValueOnce(page([NEAR_UPCOMING, PAST_DONE]));
+
+    const screen = renderScreen();
+    await screen.findByTestId('appointment-row-apt-today');
+
+    // The coverage fetch fires on mount (no chip press needed)…
+    await waitFor(() =>
+      expect(mockList).toHaveBeenLastCalledWith({
+        scope: 'practitioner',
+        limit: 50,
+        cursor: 'cursor-1',
+      }),
+    );
+    // …and the booking that had fallen off the window appears.
+    expect(await screen.findByTestId('appointment-row-apt-upcoming-near')).toBeTruthy();
+  });
+
+  it('withholds the past empty state while the coverage fetch is still running', async () => {
+    mockList.mockResolvedValueOnce(windowPage()).mockReturnValueOnce(
+      new Promise<CursorPage<Appointment>>(() => {}),
+    );
+    const screen = renderScreen();
+    await screen.findByTestId('appointment-row-apt-today');
+
+    fireEvent.press(screen.getByTestId('agenda-segment-past'));
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
+
+    // Uncovered: NO empty claim — the footer spinner speaks instead.
+    expect(screen.queryByText('No past appointments')).toBeNull();
+    expect(screen.UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
   });
 
   it('a re-focus refetch re-runs the coverage fetch so the gap cannot re-open (MINOR-9)', async () => {

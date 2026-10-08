@@ -88,12 +88,16 @@ export default function PractitionerDetailScreen() {
             <FactLine label={t('practitioner.yearsExperience', { years: data.yearsExperience })} />
           ) : null}
           {data.consultationFeeXaf != null ? (
-            <FactLine label={`From ${data.consultationFeeXaf.toLocaleString()} XAF`} />
+            <FactLine label={`From ${data.consultationFeeXaf.toLocaleString(i18n.language)} XAF`} />
           ) : null}
           {data.nextAvailableAt ? (
             <FactLine
               label={t('practitioner.nextAvailable', {
-                when: formatDate(data.nextAvailableAt, { dateStyle: 'short', timeStyle: 'short' }),
+                when: formatDate(
+                  data.nextAvailableAt,
+                  { dateStyle: 'short', timeStyle: 'short' },
+                  i18n.language,
+                ),
               })}
             />
           ) : null}
@@ -189,7 +193,7 @@ export default function PractitionerDetailScreen() {
       ) : null}
 
       <Text variant="caption" color="textMuted" align="center">
-        {formatDate(data.memberSince, { dateStyle: 'long' })}
+        {formatDate(data.memberSince, { dateStyle: 'long' }, i18n.language)}
       </Text>
     </Screen>
   );
