@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, FlatList, StyleSheet, View } from 'react-native';
 
-import { appointmentsService, isApiError } from '@/api';
+import { appointmentsService, practitionerService, isApiError } from '@/api';
 import { AppointmentRow, PendingRequestRow } from '@/components/appointments';
 import { Banner, EmptyState, ErrorState } from '@/components/feedback';
 import { Button, Chip, IconButton, Screen, Spinner, Text } from '@/components/ui';
@@ -80,6 +80,11 @@ export default function AgendaScreen() {
     () => appointmentsService.list({ scope: 'practitioner', limit: PAGE_SIZE }),
     [],
   );
+  // Verification status for the unverified banner (P7.T4): one cheap DB read.
+  // Supplementary to the agenda itself — while it is unknown (fetch failed or
+  // still loading) no banner renders rather than a second error surface; the
+  // primary list failure already has its Banner below.
+  const verification = useAsync(() => practitionerService.getMine(), []);
   const [olderPages, setOlderPages] = useState<Appointment[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -126,16 +131,18 @@ export default function AgendaScreen() {
   // flight too, so the refresh cannot clobber an optimistic row (the
   // availability-editor pattern).
   const { refetch: refetchList } = list;
+  const { refetch: refetchVerification } = verification;
   const busyRef = useRef(false);
   const hasFocused = useRef(false);
   useFocusEffect(
     useCallback(() => {
       if (hasFocused.current && !busyRef.current) {
         void refetchList();
+        void refetchVerification();
         setNowMs(Date.now());
       }
       hasFocused.current = true;
-    }, [refetchList]),
+    }, [refetchList, refetchVerification]),
   );
 
   // --- Incoming-request decisions (P7.T3) -----------------------------------
@@ -436,6 +443,24 @@ export default function AgendaScreen() {
           style={styles.segment}
         />
       </View>
+
+      {/* Unverified state (P7.T4): a calm explainer of what the backend
+          actually enforces — unverified practitioners are invisible to
+          patients (public detail 404s) while calendar and profile stay
+          editable. Only renders when the status is KNOWN; a failed status
+          check stays silent rather than adding a second error surface. */}
+      {verification.data && verification.data.verificationStatus !== 'verified' ? (
+        <Banner
+          message={t(
+            verification.data.verificationStatus === 'incomplete'
+              ? 'practice.verificationBanner.incomplete'
+              : verification.data.verificationStatus === 'rejected'
+                ? 'practice.verificationBanner.rejected'
+                : 'practice.verificationBanner.pending',
+          )}
+          tone={verification.data.verificationStatus === 'pending_verification' ? 'info' : 'warning'}
+        />
+      ) : null}
 
       {/* Refetch failure while stale rows stay mounted must be visible, not
           silent (the patient-tab pattern, codified standard §2). A failed

@@ -406,6 +406,89 @@ export const fr: Translations = {
         'Cette demande a changé — le patient l’a peut-être annulée. La liste affiche l’état actuel.',
       started: 'Le créneau demandé a déjà commencé. La liste affiche l’état actuel.',
     },
+    // Vérification et justificatifs (P7.T4). Le libellé reflète ce que le
+    // backend applique réellement : seuls les praticiens VÉRIFIÉS sont
+    // publics et réservables, tandis que les disponibilités et le profil
+    // public restent modifiables quel que soit le statut.
+    verification: {
+      cardTitle: 'Vérification',
+      statusIncomplete: 'Action requise',
+      statusPending: 'En cours d’examen',
+      statusVerified: 'Vérifié',
+      statusRejected: 'Non validé',
+      formIntro:
+        'Votre inscription au Conseil médical du Cameroun, votre carte nationale d’identité et une photo de profil attestent qui vous êtes. Les patients pourront réserver dès qu’un administrateur les valide.',
+      rejectedIntro:
+        'Votre dernier dossier n’a pas été validé. Mettez vos documents à jour ci-dessous puis renvoyez-les.',
+      reasonLabel: 'Motif indiqué',
+      cmcLabel: 'Numéro au Conseil médical du Cameroun',
+      cmcPlaceholder: 'p. ex. CMC-2024-01234',
+      nicLabel: 'Numéro de carte nationale d’identité',
+      nicPlaceholder: 'p. ex. 123456789',
+      docsTitle: 'Documents justificatifs',
+      docCmc: 'Certificat d’inscription au CMC',
+      docCmcHint: 'PDF ou Word, 25 Mo max.',
+      docNic: 'Copie de la carte nationale d’identité',
+      docNicHint: 'PDF ou Word, 25 Mo max.',
+      docPhoto: 'Photo de profil',
+      docPhotoHint: 'JPEG ou PNG, 25 Mo max.',
+      addFile: 'Choisir un fichier',
+      uploading: 'Envoi en cours…',
+      uploadDone: 'Envoyé',
+      uploadFailed: 'Échec de l’envoi.',
+      retryUpload: 'Réessayer l’envoi',
+      removeFile: 'Supprimer le fichier',
+      fileTooLarge: 'Ce fichier dépasse 25 Mo. Choisissez-en un plus léger.',
+      fileTypeUnsupported: 'Ce type de fichier n’est pas pris en charge ici.',
+      nothingSelected: 'Renseignez les deux numéros et joignez les trois documents pour envoyer.',
+      submitCredentials: 'Envoyer pour vérification',
+      pendingTitle: 'Votre dossier est en cours d’examen',
+      pendingBody:
+        'Un administrateur vérifie vos documents, généralement sous quelques jours. Les patients ne peuvent pas encore vous trouver ni réserver — nous vous prévenons dès qu’une décision est rendue.',
+      pendingSince: 'Envoyé le {{date}}',
+      pendingEditNote:
+        'Vous pouvez continuer à modifier votre profil public et vos disponibilités en attendant.',
+      rejectedTitle: 'Votre dossier n’a pas été validé',
+      rejectedBody: 'Mettez vos documents et numéros à jour ci-dessous, puis renvoyez-les.',
+      resubmit: 'Mettre à jour et renvoyer',
+      verifiedBody: 'Les patients peuvent vous trouver et réserver avec vous.',
+      notRegisteredTitle: 'Profil praticien manquant',
+      notRegisteredBody: 'Terminez votre inscription praticien pour configurer la vérification.',
+      notRegisteredAction: 'Terminer l’inscription',
+      refreshFailed:
+        'Votre statut de vérification n’a pas pu être actualisé — ce qui suit peut être périmé.',
+    },
+    // Bandeau d'agenda tant que le profil n'est pas vérifié. Le libellé
+    // reflète les règles réelles du backend : un praticien non vérifié est
+    // invisible pour les patients (fiche publique en 404) mais peut continuer
+    // à modifier son calendrier et son profil public.
+    verificationBanner: {
+      incomplete:
+        'Finalisez votre profil — les patients ne peuvent pas vous trouver ni réserver tant que vos documents ne sont pas validés.',
+      pending:
+        'Votre dossier est en cours d’examen. Les patients ne peuvent pas vous trouver ni réserver avant sa validation — votre calendrier et votre profil restent modifiables.',
+      rejected:
+        'Votre dossier n’a pas été validé. Ouvrez l’onglet Profil pour connaître le motif et le renvoyer.',
+    },
+  },
+
+  // Inscription praticien (P7.T4) — étape 1 de l'onboarding, accessible depuis
+  // l'onglet Profil du patient ; l'attribution du rôle oriente la console à la fin.
+  practitionerRegister: {
+    title: 'Devenir praticien',
+    subtitle:
+      'Créez votre profil praticien. Les patients pourront vous trouver et réserver dès que vos documents seront validés.',
+    roleLabel: 'Vous vous inscrivez en tant que',
+    roleDoctor: 'Médecin',
+    roleNurse: 'Infirmier(ère)',
+    professionLabel: 'Profession',
+    surname: 'Nom',
+    givenNames: 'Prénom(s)',
+    locationLabel: 'Ville / région (facultatif)',
+    locationPlaceholder: 'p. ex. Douala',
+    submit: 'Créer le profil praticien',
+    professionsFailed: 'La liste des professions n’a pas pu être chargée.',
+    entry: 'Devenir praticien',
   },
 
   profile: {

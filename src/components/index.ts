@@ -5,3 +5,4 @@ export * from './brand';
 export * from './auth';
 export * from './appointments';
 export * from './profile';
+export * from './practice';

@@ -403,6 +403,89 @@ export const en = {
         'This request has changed — the patient may have cancelled it. The list shows the current state.',
       started: 'The requested time has already started. The list shows the current state.',
     },
+    // Verification & credentials (P7.T4). The copy reflects what the backend
+    // actually enforces: only VERIFIED practitioners are publicly listable or
+    // bookable, while availability and the public profile stay editable at
+    // every status (profile.routes description + availability guards).
+    verification: {
+      cardTitle: 'Verification',
+      statusIncomplete: 'Action needed',
+      statusPending: 'Under review',
+      statusVerified: 'Verified',
+      statusRejected: 'Not approved',
+      formIntro:
+        'Your Cameroon Medical Council registration, national ID and profile photo prove who you are. Patients can book you once an administrator approves them.',
+      rejectedIntro:
+        'Your last submission was not approved. Update your documents below and send them again.',
+      reasonLabel: 'Reason given',
+      cmcLabel: 'Cameroon Medical Council number',
+      cmcPlaceholder: 'e.g. CMC-2024-01234',
+      nicLabel: 'National ID card number',
+      nicPlaceholder: 'e.g. 123456789',
+      docsTitle: 'Supporting documents',
+      docCmc: 'CMC registration certificate',
+      docCmcHint: 'PDF or Word, up to 25 MB',
+      docNic: 'National ID card copy',
+      docNicHint: 'PDF or Word, up to 25 MB',
+      docPhoto: 'Profile photo',
+      docPhotoHint: 'JPEG or PNG, up to 25 MB',
+      addFile: 'Choose file',
+      uploading: 'Uploading…',
+      uploadDone: 'Uploaded',
+      uploadFailed: 'Upload failed.',
+      retryUpload: 'Retry upload',
+      removeFile: 'Remove file',
+      fileTooLarge: 'That file is larger than 25 MB. Choose a smaller one.',
+      fileTypeUnsupported: 'That file type is not supported here.',
+      nothingSelected: 'Enter both numbers and attach all three documents to submit.',
+      submitCredentials: 'Submit for verification',
+      pendingTitle: 'Your credentials are under review',
+      pendingBody:
+        'An administrator is checking your documents, usually within a few days. Patients cannot find or book you yet — we will notify you as soon as a decision is made.',
+      pendingSince: 'Submitted on {{date}}',
+      pendingEditNote:
+        'You can keep editing your public profile and availability while you wait.',
+      rejectedTitle: 'Your credentials were not approved',
+      rejectedBody: 'Update your documents and numbers below, then send them again.',
+      resubmit: 'Update and re-submit',
+      verifiedBody: 'Patients can find and book you.',
+      notRegisteredTitle: 'Practitioner profile missing',
+      notRegisteredBody: 'Finish your practitioner registration to set up verification.',
+      notRegisteredAction: 'Complete registration',
+      refreshFailed:
+        'Your verification status could not be refreshed — what you see below may be out of date.',
+    },
+    // The agenda-level banner while the profile is not verified yet. The
+    // wording reflects the real backend rules: unverified practitioners are
+    // invisible to patients (public detail 404s) but may keep editing their
+    // calendar and public profile.
+    verificationBanner: {
+      incomplete:
+        'Finish setting up your profile — patients cannot find or book you until your credentials are approved.',
+      pending:
+        'Your credentials are under review. Patients cannot find or book you until they are approved — your calendar and profile stay editable.',
+      rejected:
+        'Your credentials were not approved. Open the Profile tab to see the reason and send them again.',
+    },
+  },
+
+  // Practitioner registration (P7.T4) — step 1 of onboarding, reached from the
+  // patient Profile tab; the role grant routes the console on completion.
+  practitionerRegister: {
+    title: 'Join as a practitioner',
+    subtitle:
+      'Create your practitioner profile. Patients can find and book you once your documents are approved.',
+    roleLabel: 'You are registering as',
+    roleDoctor: 'Doctor',
+    roleNurse: 'Nurse',
+    professionLabel: 'Profession',
+    surname: 'Surname',
+    givenNames: 'Given names',
+    locationLabel: 'City / region (optional)',
+    locationPlaceholder: 'e.g. Douala',
+    submit: 'Create practitioner profile',
+    professionsFailed: 'The professions list could not be loaded.',
+    entry: 'Join as a practitioner',
   },
 
   profile: {

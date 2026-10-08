@@ -21,3 +21,4 @@ export {
   type AvailabilityRulesPage,
   type AvailabilityExceptionsPage,
 } from './availability.service';
+export { practitionerService } from './practitioner.service';

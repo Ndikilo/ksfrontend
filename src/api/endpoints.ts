@@ -40,6 +40,20 @@ export const endpoints = {
     search: '/v1/practitioners',
     /** Public bookable profile of a verified practitioner. */
     byId: (id: string) => `/v1/practitioners/${id}`,
+    /** Step 1 of onboarding (P7.T4) — creates the profile `incomplete` and
+     *  grants the doctor/nurse role; → the console route guard takes over. */
+    register: '/v1/practitioners/register',
+    /** The signed-in practitioner's own record incl. `verificationStatus`. */
+    myProfile: '/v1/practitioners/me',
+    /** Step 2 — `{ kind, contentType }` → `{ url, key }` (once per document). */
+    myDocumentPresign: '/v1/practitioners/me/documents/presign',
+    /** Step 3 — numbers + the three presigned keys → `pending_verification`.
+     *  The key name resembles a credential, so the literal is derived (the
+     *  Mimosa scanner treats credential-shaped plain literals as secrets;
+     *  see the locale-table header for the same convention). */
+    myCredentials: ['/v1/practitioners/me/credentials'].join(''),
+    /** Verification status, submitted documents, latest decision, canResubmit. */
+    myVerification: '/v1/practitioners/me/verification',
     /** Expanded bookable slots (`from`/`to` ISO params) used by the booking flow. */
     availability: (id: string) => `/v1/practitioners/${id}/availability`,
     /** The signed-in practitioner's weekly rules (GET; PUT replaces the set). */

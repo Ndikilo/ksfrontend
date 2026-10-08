@@ -353,6 +353,76 @@ export type Appointment = {
 /** The practitioner-configurable cancellation policy applied to NEW bookings. */
 export type BookingPolicy = { noticeHours: number; feeXaf: number };
 
+// --- Practitioner onboarding & verification (P7.T4) ---------------------------
+// Mirrors ksbackend `practitioner.contract.ts`: registration creates the
+// profile in `incomplete`, the credentials submission moves it to
+// `pending_verification`, and an admin decision ends in `verified`/`rejected`.
+
+/** Where a practitioner profile sits in the verification flow (backend enum). */
+export type VerificationStatus = 'incomplete' | 'pending_verification' | 'verified' | 'rejected';
+
+/** The three documents the credentials submission requires. */
+export type VerificationDocumentKind = 'cmc-certificate' | 'nic' | 'profile-photo';
+
+/** The signed-in practitioner's own record (`GET /v1/practitioners/me`). */
+export type MyPractitioner = {
+  id: ID;
+  userId: ID;
+  professionId: ID;
+  prefix: string | null;
+  surname: string;
+  givenNames: string;
+  location: string | null;
+  verificationStatus: VerificationStatus;
+};
+
+/** Step 1 body (`POST /v1/practitioners/register`) — grants the doctor/nurse role. */
+export type PractitionerRegistrationInput = {
+  role: 'doctor' | 'nurse';
+  professionId: ID;
+  prefix?: string;
+  surname: string;
+  givenNames: string;
+  phone?: string;
+  location?: string;
+  consentVersion: string;
+  acceptTerms: true;
+};
+
+/** A submitted document, with a presigned download URL (review evidence). */
+export type PractitionerVerificationDocument = {
+  kind: VerificationDocumentKind;
+  url: string;
+  uploadedAt: string;
+};
+
+/** Step 2/3 state (`GET /v1/practitioners/me/verification`). */
+export type PractitionerVerification = {
+  status: VerificationStatus;
+  submittedAt: string | null;
+  documents: PractitionerVerificationDocument[];
+  latestDecision: {
+    decision: 'approved' | 'rejected';
+    reason: string | null;
+    createdAt: string;
+  } | null;
+  /** True for `incomplete`/`rejected` — a submission (or re-submission) is accepted. */
+  canResubmit: boolean;
+};
+
+/** `{ url, key }` from the presign call; PUT bytes to `url`, keep `key`. */
+export type PresignedUpload = { url: string; key: string };
+
+/** Step 3 body (`POST /v1/practitioners/me/credentials`) — the three storage
+ *  keys returned by the presign + PUT round-trip, with the identifiers. */
+export type CredentialsSubmissionInput = {
+  cmcRegistrationNumber: string;
+  nicNumber: string;
+  cmcCertificateFileKey: string;
+  nicFileKey: string;
+  profilePhotoFileKey: string;
+};
+
 // --- Payments (P5) -----------------------------------------------------------
 
 /**
