@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -22,10 +22,17 @@ import { formatClinicDate, statusPresentation } from '@/utils';
 export const AppointmentRow = memo(function AppointmentRow({
   appointment,
   contextName,
+  actions,
 }: {
   appointment: Appointment;
   /** The counterparty's display name (list rows only — backend P7.T1). */
   contextName?: string;
+  /**
+   * Optional row-level controls rendered inside the card under the booking
+   * info (P7.T3: the pending-request Confirm/Decline decisions). Plain list
+   * rows pass nothing and render exactly as before.
+   */
+  actions?: ReactNode;
 }) {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
@@ -55,37 +62,43 @@ export const AppointmentRow = memo(function AppointmentRow({
         pressed && styles.pressed,
       ]}
     >
-      <View style={styles.rowMain}>
-        {contextName ? (
-          <>
-            <Text variant="bodyStrong">{contextName}</Text>
-            <Text variant="body" color="textMuted">
-              {type}
-            </Text>
-          </>
-        ) : (
-          <Text variant="bodyStrong">{type}</Text>
-        )}
-        <Text variant="body" color="textMuted">
-          {when}
-        </Text>
-        <Text variant="caption" color="textMuted">
-          {price}
-        </Text>
+      <View style={styles.contentRow}>
+        <View style={styles.rowMain}>
+          {contextName ? (
+            <>
+              <Text variant="bodyStrong">{contextName}</Text>
+              <Text variant="body" color="textMuted">
+                {type}
+              </Text>
+            </>
+          ) : (
+            <Text variant="bodyStrong">{type}</Text>
+          )}
+          <Text variant="body" color="textMuted">
+            {when}
+          </Text>
+          <Text variant="caption" color="textMuted">
+            {price}
+          </Text>
+        </View>
+        <Badge label={t(`appointments.${status.key}`)} tone={status.tone} />
       </View>
-      <Badge label={t(`appointments.${status.key}`)} tone={status.tone} />
+      {actions ? actions : null}
     </Pressable>
   );
 });
 
 const styles = StyleSheet.create({
   row: {
+    borderWidth: 1,
+    padding: 16,
+    gap: 12,
+  },
+  contentRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    borderWidth: 1,
-    padding: 16,
   },
   pressed: { opacity: 0.85 },
   rowMain: { flex: 1, gap: 2 },

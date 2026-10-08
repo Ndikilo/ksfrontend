@@ -62,6 +62,8 @@ export const endpoints = {
     byId: (id: string) => `/v1/appointments/${id}`,
     reschedule: (id: string) => `/v1/appointments/${id}/reschedule`,
     cancel: (id: string) => `/v1/appointments/${id}/cancel`,
+    /** POST — the practitioner's confirm of a PENDING request (P7.T3). */
+    confirm: (id: string) => `/v1/appointments/${id}/confirm`,
   },
   payments: {
     /** POST (checkout) — create/re-attach the charge for an appointment. */

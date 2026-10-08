@@ -314,6 +314,24 @@ export const fr: Translations = {
     upcomingEmptyMessage: 'Les rendez-vous pris par vos patients apparaîtront ici.',
     pastEmptyTitle: 'Aucun rendez-vous passé',
     pastEmptyMessage: "L'historique de vos rendez-vous apparaîtra ici.",
+    // Demandes entrantes (P7.T3) — le segment « à confirmer » et ses décisions.
+    segmentRequests: 'Demandes',
+    segmentDay: 'Journée',
+    pendingEmptyTitle: 'Aucune nouvelle demande',
+    pendingEmptyMessage:
+      'Les demandes de réservation de vos patients arrivent ici, prêtes à être confirmées.',
+    confirmRequest: 'Confirmer',
+    declineRequest: 'Refuser',
+    declineConfirmTitle: 'Refuser cette demande ?',
+    declineConfirmMessage:
+      'Le patient sera informé que ce créneau n’est plus disponible et il redeviendra réservable.',
+    declineKeepAction: 'Conserver la demande',
+    todayLabel: 'Aujourd’hui',
+    dayPrev: 'Jour précédent',
+    dayNext: 'Jour suivant',
+    dayEmptyTitle: 'Aucun rendez-vous le {{date}}',
+    dayEmptyMessage: 'Rien n’est réservé pour cette journée.',
+    nowLabel: 'Maintenant · {{time}}',
     availabilityTitle: 'Disponibilités',
     availabilityIntro:
       'Vos horaires hebdomadaires et vos exceptions définissent les créneaux réservables par vos patients.',
@@ -378,6 +396,15 @@ export const fr: Translations = {
       typesRequired: 'Choisissez au moins un type de consultation.',
       dateRequired: 'Choisissez une date.',
       rulesOverlap: 'Cet horaire chevauche un horaire existant le même jour.',
+    },
+    // Une confirmation ou un refus qui n'est pas passé (P7.T3). Les codes 409
+    // signifient que le rendez-vous a changé entre-temps — la liste est
+    // rechargée pour décider sur l'état réel, pas sur l'état obsolète.
+    requestErrors: {
+      actionFailed: 'Cette demande n’a pas pu être mise à jour. Veuillez réessayer.',
+      stateConflict:
+        'Cette demande a changé — le patient l’a peut-être annulée. La liste affiche l’état actuel.',
+      started: 'Le créneau demandé a déjà commencé. La liste affiche l’état actuel.',
     },
   },
 

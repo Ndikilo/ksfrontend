@@ -1,6 +1,6 @@
-import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor, within } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
-import { FlatList } from 'react-native';
+import { ActivityIndicator, Alert, FlatList } from 'react-native';
 
 import '@/i18n';
 import { ThemeProvider } from '@/theme';
@@ -34,8 +34,14 @@ jest.mock('expo-router', () => ({
 
 // API seam — services only (useAsync imports the barrel for helpers).
 const mockList = jest.fn();
+const mockConfirm = jest.fn();
+const mockCancel = jest.fn();
 jest.mock('@/api/services', () => ({
-  appointmentsService: { list: (...args: unknown[]) => mockList(...args) },
+  appointmentsService: {
+    list: (...args: unknown[]) => mockList(...args),
+    confirm: (...args: unknown[]) => mockConfirm(...args),
+    cancel: (...args: unknown[]) => mockCancel(...args),
+  },
 }));
 
 // Screen chrome — stub SafeAreaView (no provider in tests).
@@ -71,6 +77,21 @@ const PAST_DONE: Appointment = {
   status: 'completed',
   startsAt: '2020-01-15T09:00:00.000Z',
 };
+// Incoming requests (P7.T3) — pending bookings awaiting the practitioner's
+// decision, named for WHO they are for.
+const PENDING: Appointment = {
+  ...UPCOMING,
+  id: 'apt-pending-1',
+  status: 'pending',
+  patientName: 'Burma Tabi',
+};
+const PENDING_LATER: Appointment = {
+  ...PENDING,
+  id: 'apt-pending-2',
+  patientName: 'Chantal Nkeng',
+  startsAt: '2030-01-16T09:00:00.000Z',
+  endsAt: '2030-01-16T10:00:00.000Z',
+};
 
 const page = (
   data: Appointment[],
@@ -86,6 +107,22 @@ const renderScreen = () =>
       <AgendaScreen />
     </ThemeProvider>,
   );
+
+/**
+ * The nearest ancestor carrying `accessibilityState` — the ui Button exposes
+ * disabled/busy there (its Pressable), not on the label Text. Structural walk
+ * so no react-test-renderer type import is needed (it ships none).
+ */
+type A11yNode = {
+  props: { accessibilityState?: { disabled?: boolean; busy?: boolean } };
+  parent: A11yNode | null;
+};
+
+const pressableState = (element: A11yNode): { disabled?: boolean; busy?: boolean } => {
+  let node: A11yNode | null = element;
+  while (node && node.props.accessibilityState === undefined) node = node.parent;
+  return node?.props.accessibilityState ?? {};
+};
 
 beforeEach(() => {
   jest.resetAllMocks();
@@ -253,5 +290,254 @@ describe('Practitioner agenda (P7.T1)', () => {
       resolveRefetch(page([UPCOMING]));
     });
     expect(screen.getByTestId('appointment-row-apt-1')).toBeTruthy();
+  });
+});
+
+describe('Incoming requests + day view (P7.T3)', () => {
+  it('pending requests render the patient name with Confirm and Decline on the row', async () => {
+    mockList.mockResolvedValue(page([PENDING]));
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByTestId('agenda-segment-pending'));
+
+    const row = screen.getByTestId('appointment-row-apt-pending-1');
+    // WHO the request is for leads the row and its a11y label (standard §2).
+    expect(screen.getByText('Burma Tabi')).toBeTruthy();
+    expect(row.props.accessibilityLabel.startsWith('Burma Tabi, ')).toBe(true);
+    expect(screen.getByText('Pending')).toBeTruthy();
+    // Both decisions sit directly on the row.
+    expect(screen.getByText('Confirm')).toBeTruthy();
+    expect(screen.getByText('Decline')).toBeTruthy();
+  });
+
+  it('confirm is optimistic, hits the endpoint, and settles the row', async () => {
+    mockList.mockResolvedValue(page([PENDING, UPCOMING]));
+    let resolveConfirm: (value: Appointment) => void = () => {};
+    mockConfirm.mockReturnValue(
+      new Promise<Appointment>((resolve) => {
+        resolveConfirm = resolve;
+      }),
+    );
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByTestId('agenda-segment-pending'));
+    fireEvent.press(screen.getByText('Confirm'));
+
+    // The endpoint got the id, and the row flips BEFORE the response — the
+    // optimistic state is what the practitioner sees on 3G.
+    expect(mockConfirm).toHaveBeenCalledWith('apt-pending-1');
+    expect(await screen.findByText('Confirmed')).toBeTruthy();
+    // In flight: this row's own Decline is paused, and Confirm shows its busy
+    // spinner (the label gives way to the ActivityIndicator while loading).
+    expect(pressableState(screen.getByText('Decline')).disabled).toBe(true);
+    expect(screen.UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+
+    await act(async () => {
+      resolveConfirm({ ...PENDING, status: 'confirmed' });
+    });
+    // Settled: the confirmed booking leaves the requests segment and joins
+    // the upcoming agenda.
+    expect(screen.queryByTestId('appointment-row-apt-pending-1')).toBeNull();
+    fireEvent.press(screen.getByTestId('agenda-segment-upcoming'));
+    expect(await screen.findByTestId('appointment-row-apt-1')).toBeTruthy();
+    expect(screen.getByTestId('appointment-row-apt-pending-1')).toBeTruthy();
+  });
+
+  it('pauses sibling decisions while one request is in flight', async () => {
+    mockList.mockResolvedValue(page([PENDING, PENDING_LATER]));
+    let resolveConfirm: (value: Appointment) => void = () => {};
+    mockConfirm.mockReturnValue(
+      new Promise<Appointment>((resolve) => {
+        resolveConfirm = resolve;
+      }),
+    );
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByTestId('agenda-segment-pending'));
+    const [row1, row2] = screen.getAllByTestId(/appointment-row-apt-pending/);
+    fireEvent.press(within(row1).getByText('Confirm'));
+
+    // Row 1's Decline AND row 2's whole decision pair are disabled: two
+    // lifecycle writes must never interleave.
+    expect(pressableState(within(row1).getByText('Decline')).disabled).toBe(true);
+    expect(pressableState(within(row2).getByText('Confirm')).disabled).toBe(true);
+    expect(pressableState(within(row2).getByText('Decline')).disabled).toBe(true);
+
+    await act(async () => {
+      resolveConfirm({ ...PENDING, status: 'confirmed' });
+    });
+  });
+
+  it('a failed confirm rolls the row back and surfaces the failure', async () => {
+    mockList.mockResolvedValue(page([PENDING]));
+    mockConfirm.mockRejectedValueOnce({ status: 500, message: 'Boom', code: 'INTERNAL' });
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByTestId('agenda-segment-pending'));
+    fireEvent.press(screen.getByText('Confirm'));
+
+    // The failure is visible and says what to do next; the row is back in the
+    // segment as Pending — never silently gone, never stuck optimistic.
+    expect(
+      await screen.findByText('This request could not be updated. Please try again.'),
+    ).toBeTruthy();
+    expect(screen.getByTestId('appointment-row-apt-pending-1')).toBeTruthy();
+    expect(screen.getByText('Pending')).toBeTruthy();
+    // A plain failure does not refetch (no reason to believe the list moved).
+    expect(mockList).toHaveBeenCalledTimes(1);
+  });
+
+  it('a 409 state conflict says so and refetches the true state', async () => {
+    mockList.mockResolvedValue(page([PENDING]));
+    mockConfirm.mockRejectedValueOnce({
+      status: 409,
+      code: 'APPOINTMENT_STATE_INVALID',
+      message: 'state invalid',
+    });
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByTestId('agenda-segment-pending'));
+    // The patient cancelled meanwhile — the refetch must return the TRUTH.
+    mockList.mockResolvedValueOnce(page([{ ...PENDING, status: 'cancelled' }]));
+    fireEvent.press(screen.getByText('Confirm'));
+
+    expect(
+      await screen.findByText(
+        'This request has changed — the patient may have cancelled it. The list shows the current state.',
+      ),
+    ).toBeTruthy();
+    // The refetch pins a NEW list call (standard §2): mount + conflict = 2.
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
+    // The truth lands: the cancelled request leaves the pending decisions.
+    await waitFor(() =>
+      expect(screen.queryByTestId('appointment-row-apt-pending-1')).toBeNull(),
+    );
+  });
+
+  it('decline confirms first, then hits the cancel endpoint and removes the request', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    mockList.mockResolvedValue(page([PENDING]));
+    mockCancel.mockResolvedValue({ ...PENDING, status: 'cancelled' });
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByTestId('agenda-segment-pending'));
+    fireEvent.press(screen.getByText('Decline'));
+
+    // Destructive actions confirm (standard §2) — consequence spelled out,
+    // nothing sent until the destructive button fires.
+    expect(alertSpy).toHaveBeenCalledTimes(1);
+    const [title, message, buttons] = alertSpy.mock.calls[0];
+    expect(title).toBe('Decline this request?');
+    expect(message).toContain('no longer available');
+    expect(mockCancel).not.toHaveBeenCalled();
+
+    const destructive = buttons?.find((button) => button?.text === 'Decline');
+    await act(async () => {
+      destructive?.onPress?.();
+    });
+
+    // Decline IS a practitioner cancel of a pending request (the backend's
+    // `declined` scenario) — so the endpoint is the cancel one.
+    expect(mockCancel).toHaveBeenCalledWith('apt-pending-1');
+    await waitFor(() =>
+      expect(screen.queryByTestId('appointment-row-apt-pending-1')).toBeNull(),
+    );
+    // The declined request lands in history as Cancelled.
+    fireEvent.press(screen.getByTestId('agenda-segment-past'));
+    expect(await screen.findByTestId('appointment-row-apt-pending-1')).toBeTruthy();
+    expect(screen.getByText('Cancelled')).toBeTruthy();
+    alertSpy.mockRestore();
+  });
+
+  it('day view shows only that clinic date in time order, with a now anchor', async () => {
+    const now = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2030-01-15T10:00:00.000Z'));
+    const DAY_EARLY: Appointment = {
+      ...UPCOMING,
+      id: 'apt-day-early',
+      startsAt: '2030-01-15T08:00:00.000Z', // 09:00 Douala — already over at 11:00.
+      endsAt: '2030-01-15T09:00:00.000Z',
+    };
+    const DAY_LATE: Appointment = {
+      ...UPCOMING,
+      id: 'apt-day-late',
+      startsAt: '2030-01-15T11:00:00.000Z', // 12:00 Douala — still ahead.
+      endsAt: '2030-01-15T12:00:00.000Z',
+    };
+    const OTHER_DAY: Appointment = {
+      ...UPCOMING,
+      id: 'apt-other-day',
+      startsAt: '2030-01-16T09:00:00.000Z',
+      endsAt: '2030-01-16T10:00:00.000Z',
+    };
+    // The backend lists newest start first — the day view must re-order.
+    mockList.mockResolvedValue(page([OTHER_DAY, DAY_LATE, DAY_EARLY, PAST_DONE]));
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByTestId('agenda-segment-day'));
+
+    // Ascending time order regardless of the list's own order.
+    const order = screen
+      .getAllByTestId(/appointment-row-apt-day/)
+      .map((row) => row.props.testID);
+    expect(order).toEqual(['appointment-row-apt-day-early', 'appointment-row-apt-day-late']);
+    // ONLY the selected clinic day: tomorrow's and 2020's rows stay out.
+    expect(screen.queryByTestId('appointment-row-apt-other-day')).toBeNull();
+    expect(screen.queryByTestId('appointment-row-apt-2')).toBeNull();
+    // Today: the now/next anchor sits between ended and upcoming bookings.
+    const anchored = screen
+      .getAllByTestId(/agenda-now-marker|appointment-row-apt-day/)
+      .map((row) => row.props.testID);
+    expect(anchored).toEqual([
+      'appointment-row-apt-day-early',
+      'agenda-now-marker',
+      'appointment-row-apt-day-late',
+    ]);
+    expect(screen.getByText('Today')).toBeTruthy();
+    now.mockRestore();
+  });
+
+  it('the day navigator moves to the next day and back (no anchor off today)', async () => {
+    const now = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2030-01-15T10:00:00.000Z'));
+    const DAY_LATE: Appointment = {
+      ...UPCOMING,
+      id: 'apt-day-late',
+      startsAt: '2030-01-15T11:00:00.000Z',
+      endsAt: '2030-01-15T12:00:00.000Z',
+    };
+    mockList.mockResolvedValue(page([DAY_LATE]));
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByTestId('agenda-segment-day'));
+    expect(await screen.findByTestId('appointment-row-apt-day-late')).toBeTruthy();
+    expect(screen.getByText('Today')).toBeTruthy();
+
+    // Next: the 16th — empty, and no now anchor on a day that is not today.
+    fireEvent.press(screen.getByLabelText('Next day'));
+    expect(await screen.findByText(/No appointments on/)).toBeTruthy();
+    expect(screen.queryByTestId('appointment-row-apt-day-late')).toBeNull();
+    expect(screen.queryByTestId('agenda-now-marker')).toBeNull();
+
+    // Back: the 15th again.
+    fireEvent.press(screen.getByLabelText('Previous day'));
+    expect(await screen.findByTestId('appointment-row-apt-day-late')).toBeTruthy();
+    now.mockRestore();
+  });
+
+  it('an empty requests list explains itself calmly', async () => {
+    mockList.mockResolvedValue(page([]));
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByTestId('agenda-segment-pending'));
+
+    expect(await screen.findByText('No new requests')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Booking requests from your patients will appear here for you to confirm.',
+      ),
+    ).toBeTruthy();
+  });
+
+  it('a failed refetch shows the Banner over stale rows on the requests segment too', async () => {
+    mockList.mockResolvedValue(page([PENDING]));
+    const screen = renderScreen();
+    fireEvent.press(await screen.findByTestId('agenda-segment-pending'));
+
+    mockList.mockRejectedValueOnce({ status: 0, code: 'OFFLINE', message: 'No connection.' });
+    act(() => mockOnRefocus?.());
+
+    // The failure is VISIBLE, the stale request stays mounted (standard §2).
+    expect(await screen.findByText('No connection.')).toBeTruthy();
+    expect(screen.getByTestId('appointment-row-apt-pending-1')).toBeTruthy();
   });
 });

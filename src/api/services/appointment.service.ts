@@ -54,6 +54,15 @@ export const appointmentsService = {
 
   cancel: (id: ID) => http.post<Appointment>(endpoints.appointments.cancel(id)),
 
+  /**
+   * The practitioner's confirm of a PENDING request (P7.T3). Today the
+   * `confirmed` status is still reached payment-first (the checkout funnel
+   * owns `confirmAppointment`); this seam targets the practitioner-driven
+   * confirm the backend's lifecycle domain anticipates for P7
+   * (domain/appointment/notifications.ts). The response is the Appointment.
+   */
+  confirm: (id: ID) => http.post<Appointment>(endpoints.appointments.confirm(id)),
+
   /** A practitioner's expanded open slots inside a window (ISO datetimes). */
   openSlots: (practitionerId: ID, from?: string, to?: string) =>
     http.get<PublicSlotsPage>(endpoints.practitioners.availability(practitionerId), {

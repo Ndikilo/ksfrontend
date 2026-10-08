@@ -311,6 +311,23 @@ export const en = {
     upcomingEmptyMessage: 'Bookings your patients make will appear here.',
     pastEmptyTitle: 'No past appointments',
     pastEmptyMessage: 'Your appointment history will appear here.',
+    // Incoming requests (P7.T3) — the pending segment and its decisions.
+    segmentRequests: 'Requests',
+    segmentDay: 'Day',
+    pendingEmptyTitle: 'No new requests',
+    pendingEmptyMessage: 'Booking requests from your patients will appear here for you to confirm.',
+    confirmRequest: 'Confirm',
+    declineRequest: 'Decline',
+    declineConfirmTitle: 'Decline this request?',
+    declineConfirmMessage:
+      'The patient will be told this time is no longer available and the slot reopens for booking.',
+    declineKeepAction: 'Keep request',
+    todayLabel: 'Today',
+    dayPrev: 'Previous day',
+    dayNext: 'Next day',
+    dayEmptyTitle: 'No appointments on {{date}}',
+    dayEmptyMessage: 'Nothing is booked for this day yet.',
+    nowLabel: 'Now · {{time}}',
     // Calendar management (P7.T2) — the availability editor. Every change
     // reshapes the slot keys patients book, so consequences are spelled out.
     availabilityTitle: 'Availability',
@@ -376,6 +393,15 @@ export const en = {
       typesRequired: 'Choose at least one consultation type.',
       dateRequired: 'Choose a date.',
       rulesOverlap: 'This rule overlaps an existing rule on the same day.',
+    },
+    // A confirm/decline that did not land (P7.T3). The 409 codes say the
+    // appointment moved under us — the list refetches so the practitioner
+    // acts on the real state, not the stale one.
+    requestErrors: {
+      actionFailed: 'This request could not be updated. Please try again.',
+      stateConflict:
+        'This request has changed — the patient may have cancelled it. The list shows the current state.',
+      started: 'The requested time has already started. The list shows the current state.',
     },
   },
 
