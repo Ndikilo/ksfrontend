@@ -135,8 +135,21 @@ export const fr: Translations = {
   tabs: {
     home: 'Accueil',
     appointments: 'Rendez-vous',
-    search: 'Trouver soins',
-    profile: 'Profil',
+    chats: 'Messages',
+    healthRecord: 'Dossier médical',
+    account: 'Compte',
+  },
+
+  // Onglets d'attente (P8.T4) — présents dans la barre, clairement pas encore
+  // construits, sans aucun bouton qui pourrait laisser croire le contraire.
+  placeholders: {
+    comingSoon: 'Bientôt disponible',
+    chatsTitle: 'Messages',
+    chatsMessage:
+      'La messagerie sécurisée avec votre praticien arrive bientôt. Nous vous préviendrons dès son ouverture.',
+    healthRecordTitle: 'Dossier médical',
+    healthRecordMessage:
+      'Vos ordonnances, documents et historiques de consultation seront réunis ici — bientôt disponible.',
   },
 
   appointments: {
@@ -243,6 +256,8 @@ export const fr: Translations = {
 
   practitioner: {
     verified: 'Vérifié',
+    // Annonce des cartes de découverte — le nom en premier (standard §2).
+    cardA11yLabel: '{{name}}, {{profession}}',
     yearsExperience: '{{years}} ans d’expérience',
     nextAvailable: 'Prochaine dispo {{when}}',
     about: 'À propos',
@@ -293,16 +308,50 @@ export const fr: Translations = {
     slotChipLabel: '{{time}}, {{types}} — {{state}}',
   },
 
+  // Accueil (P8). En français, « Bonjour » sert aussi l'après-midi —
+  // « Bon après-midi » est une formule d'adieu, pas de salutation — d'où
+  // deux clés à la valeur identique, et « Bonsoir » dès le soir.
   home: {
-    greeting: 'Bonjour, {{name}} 👋',
-    subtitle: "Voici ce qui se passe pour votre santé aujourd'hui.",
-    nextAppointment: 'Prochain rendez-vous',
-    scheduled: 'Planifié',
-    appointmentWith: 'Dr Amara Diallo — Bilan de santé général',
-    appointmentWhen: 'Demain à 10h30',
-    tipsTitle: 'Conseils rapides',
-    tipsBody:
-      "Hydratez-vous et visez 30 minutes d'activité aujourd'hui. Les petits pas comptent.",
+    greetingMorning: 'Bonjour {{name}} 👋',
+    greetingAfternoon: 'Bonjour {{name}} 👋',
+    greetingEvening: 'Bonsoir {{name}} 👋',
+    greetingMorningNameless: 'Bonjour 👋',
+    greetingAfternoonNameless: 'Bonjour 👋',
+    greetingEveningNameless: 'Bonsoir 👋',
+    subtitle: 'Réservez des médecins et infirmiers vérifiés — pour vous ou vos proches au pays.',
+    searchPlaceholder: 'Trouvez un médecin, un infirmier, une spécialité…',
+    searchAction: 'Rechercher un praticien',
+    categoriesTitle: 'Parcourir par catégorie',
+    categories: {
+      doctors: 'Médecins',
+      nurses: 'Infirmiers',
+      cardiologist: 'Cardiologue',
+      dentists: 'Dentistes',
+    },
+    nearby: {
+      // En-tête honnête : sans base de localisation, la liste n'est PAS
+      // « près de chez vous » — c'est le répertoire le mieux noté.
+      titleRated: 'Médecins les mieux notés',
+      titleCity: 'Médecins à {{city}}',
+      seeAll: 'Tout voir',
+      emptyTitle: 'Aucun praticien pour le moment',
+      emptyMessage:
+        'Les praticiens vérifiés apparaîtront ici au fur et à mesure de leur arrivée sur KanaSanté.',
+      browseAll: 'Voir tous les praticiens',
+      refetchFailed: 'Impossible d’actualiser — la liste affichée est la dernière chargée.',
+    },
+    tips: {
+      title: 'Conseils santé',
+      sugarTitle: 'Combien de sucre par jour ?',
+      sugarBody:
+        'Les boissons sucrées sont le premier poste à réduire : les garder pour les occasions spéciales protège les dents et l’énergie — pour vous comme pour les enfants dont vous vous occupez.',
+      sleepTitle: 'Envie de mieux dormir ?',
+      sleepBody:
+        'Un coucher à heure fixe, le week-end compris, et les écrans posés une heure avant facilitent l’endormissement. Une fatigue persistante mérite une consultation.',
+      sodaTitle: 'Le soda tous les jours ?',
+      sodaBody:
+        'L’eau apaise la soif de tous les jours — le soda reste une gourmandise. Remplacer un soda quotidien par de l’eau élimine déjà une grande part du sucre ajouté.',
+    },
   },
 
   // Console praticien (P7) — le groupe d'onglets médecin/infirmier.

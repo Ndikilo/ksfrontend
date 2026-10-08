@@ -1,20 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { consultationTypeParam, referenceService, searchService, isApiError } from '@/api';
-import {
-  Avatar,
-  Button,
-  Card,
-  Input,
-  Screen,
-  Select,
-  Spinner,
-  Text,
-} from '@/components/ui';
+import { PractitionerCardView, professionLabelOf } from '@/components/practitioners';
+import { Button, Input, Screen, Select, Spinner, Text } from '@/components/ui';
 import { EmptyState } from '@/components/feedback';
 import { CONSULTATION_TYPE_KEYS, professionIcon } from '@/constants';
 import { useAsync, useDebounce } from '@/hooks';
@@ -27,7 +19,6 @@ import type {
   PractitionerSort,
   Profession,
 } from '@/types';
-import { formatDate } from '@/utils';
 
 const PAGE_SIZE = 10;
 
@@ -43,18 +34,56 @@ const SORT_OPTIONS: { value: PractitionerSort; key: string }[] = [
 ];
 
 /**
- * Practitioner discovery: free-text search + profession/consultation filters
- * with server-side sorting and "load more" pagination. Consultation types are
- * a genuine multi-select (the API takes them comma-separated).
+ * Quick categories the home screen's chips deep-link in with (P8.T2). A
+ * category pre-filters the results before the user touches anything:
+ *  - doctors / nurses resolve to the matching profession from the reference
+ *    catalog (the API filters by one professionId — ids are backend UUIDs,
+ *    so the chip sends a semantic key and this screen resolves it);
+ *  - cardiologist / dentists map to a specialty stem for the API's
+ *    case-insensitive contains-match ('Cardiolog' covers Cardiology and
+ *    Cardiologist, 'Dentist' covers Dentist and Dentistry).
+ */
+type HomeCategory = 'doctors' | 'nurses' | 'cardiologist' | 'dentists';
+
+const HOME_CATEGORIES: readonly HomeCategory[] = ['doctors', 'nurses', 'cardiologist', 'dentists'];
+
+const CATEGORY_SPECIALTY: Partial<Record<HomeCategory, string>> = {
+  cardiologist: 'Cardiolog',
+  dentists: 'Dentist',
+};
+
+const CATEGORY_PROFESSION_MATCH: Partial<
+  Record<HomeCategory, (profession: Profession) => boolean>
+> = {
+  doctors: (p) => /doctor|physician|m[ée]decin|g[ée]n[ée]ral/i.test(`${p.nameEn} ${p.nameFr}`),
+  nurses: (p) => /nurse|infirm/i.test(`${p.nameEn} ${p.nameFr}`),
+};
+
+const isHomeCategory = (value: unknown): value is HomeCategory =>
+  typeof value === 'string' && (HOME_CATEGORIES as readonly string[]).includes(value);
+
+/**
+ * Practitioner discovery: free-text search + profession/specialty/consultation
+ * filters with server-side sorting and "load more" pagination. Consultation
+ * types are a genuine multi-select (the API takes them comma-separated).
+ * Deep links carry a `category` param (home quick-category chips, P8.T2) that
+ * seeds the filters; the pre-filter renders as a removable selected chip so
+ * it is never an invisible filter.
  */
 export default function SearchScreen() {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
   const isFrench = i18n.language === 'fr';
 
+  const params = useLocalSearchParams<{ category?: string }>();
+  const category = isHomeCategory(params.category) ? params.category : null;
+
   const [q, setQ] = useState('');
   const debouncedQ = useDebounce(q.trim(), 400);
   const [professionId, setProfessionId] = useState<string | null>(null);
+  const [specialty, setSpecialty] = useState<string | null>(
+    category !== null ? (CATEGORY_SPECIALTY[category] ?? null) : null,
+  );
   const [consultationTypes, setConsultationTypes] = useState<ConsultationType[]>([]);
   const [sort, setSort] = useState<PractitionerSort>('rating');
 
@@ -67,7 +96,17 @@ export default function SearchScreen() {
 
   const professions = useAsync(() => referenceService.professions({ limit: 50 }), []);
 
-  const queryKey = JSON.stringify({ debouncedQ, professionId, consultationTypes, sort });
+  // Profession categories need the reference catalog to resolve the semantic
+  // key into a backend professionId; re-runs when the list arrives.
+  useEffect(() => {
+    if (category === null) return;
+    const matcher = CATEGORY_PROFESSION_MATCH[category];
+    if (!matcher) return;
+    const profession = (professions.data?.data ?? []).find(matcher);
+    if (profession) setProfessionId((prev) => prev ?? profession.id);
+  }, [category, professions.data]);
+
+  const queryKey = JSON.stringify({ debouncedQ, professionId, specialty, consultationTypes, sort });
 
   // Any filter change restarts from the first page.
   useEffect(() => {
@@ -89,6 +128,7 @@ export default function SearchScreen() {
           sort,
           q: debouncedQ || undefined,
           professionId: professionId ?? undefined,
+          specialty: specialty ?? undefined,
           consultationType: consultationTypeParam(consultationTypes),
         });
         if (cancelled) return;
@@ -125,12 +165,13 @@ export default function SearchScreen() {
   const clearFilters = useCallback(() => {
     setQ('');
     setProfessionId(null);
+    setSpecialty(null);
     setConsultationTypes([]);
     setSort('rating');
   }, []);
 
   const professionLabel = useCallback(
-    (profession: Profession) => (isFrench ? profession.nameFr : profession.nameEn),
+    (profession: Profession) => professionLabelOf(profession, isFrench),
     [isFrench],
   );
 
@@ -142,7 +183,11 @@ export default function SearchScreen() {
   );
 
   const hasActiveFilters =
-    debouncedQ !== '' || professionId !== null || consultationTypes.length > 0 || sort !== 'rating';
+    debouncedQ !== '' ||
+    professionId !== null ||
+    specialty !== null ||
+    consultationTypes.length > 0 ||
+    sort !== 'rating';
 
   return (
     <Screen contentStyle={{ gap: theme.spacing.md }}>
@@ -161,12 +206,24 @@ export default function SearchScreen() {
         returnKeyType="search"
       />
 
-      {/* Profession filter — single-select (the API takes one professionId). */}
+      {/* Profession filter — single-select (the API takes one professionId).
+          A specialty pre-filter (home category chip) leads the row as a
+          removable selected chip so the active filter is always visible. */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
+        {specialty !== null && category !== null ? (
+          <Chip
+            label={`${professionIcon(t(`home.categories.${category}`))} ${t(`home.categories.${category}`)}`}
+            selected
+            onPress={() => setSpecialty(null)}
+          />
+        ) : null}
         <Chip
           label={t('search.allProfessions')}
-          selected={professionId === null}
-          onPress={() => setProfessionId(null)}
+          selected={professionId === null && specialty === null}
+          onPress={() => {
+            setProfessionId(null);
+            setSpecialty(null);
+          }}
         />
         {(professions.data?.data ?? []).map((profession) => (
           <Chip
@@ -238,7 +295,7 @@ export default function SearchScreen() {
 
       {!isLoading && !error
         ? items.map((item) => (
-            <PractitionerResultCard
+            <PractitionerCardView
               key={item.id}
               item={item}
               professionLabel={professionLabel(item.profession)}
@@ -256,61 +313,6 @@ export default function SearchScreen() {
         />
       ) : null}
     </Screen>
-  );
-}
-
-/** A practitioner row in the search results. */
-function PractitionerResultCard({
-  item,
-  professionLabel,
-  onPress,
-}: {
-  item: PractitionerCard;
-  professionLabel: string;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-  const { i18n } = useTranslation();
-  const fullName = [item.prefix, item.givenNames, item.surname].filter(Boolean).join(' ');
-
-  return (
-    <Pressable onPress={onPress}>
-      <Card style={styles.resultCard}>
-        <View style={styles.resultRow}>
-          <Avatar name={fullName} uri={item.photoUrl ?? undefined} size={52} />
-          <View style={styles.resultInfo}>
-            <Text variant="subheading" numberOfLines={1}>
-              {fullName}
-            </Text>
-            <Text variant="caption" color="textMuted" numberOfLines={1}>
-              {professionIcon(professionLabel, item.specialty)} {professionLabel}
-              {item.specialty ? ` • ${item.specialty}` : ''}
-            </Text>
-            <Text variant="caption" color="textMuted" numberOfLines={1}>
-              ⭐ {item.rating.average.toFixed(1)} ({item.rating.count})
-              {item.consultationFeeXaf != null
-                ? `  •  ${item.consultationFeeXaf.toLocaleString()} XAF`
-                : ''}
-            </Text>
-            {item.location ? (
-              <Text variant="caption" color="textMuted" numberOfLines={1}>
-                📍 {item.location}
-              </Text>
-            ) : null}
-            {item.nextAvailableAt ? (
-              <Text variant="caption" style={{ color: theme.colors.success }} numberOfLines={1}>
-                {formatDate(
-                  item.nextAvailableAt,
-                  { dateStyle: 'medium', timeStyle: 'short' },
-                  i18n.language,
-                )}
-              </Text>
-            ) : null}
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={theme.colors.textMuted} />
-        </View>
-      </Card>
-    </Pressable>
   );
 }
 
@@ -355,7 +357,4 @@ const styles = StyleSheet.create({
     marginRight: 8,
     alignSelf: 'flex-start',
   },
-  resultCard: { marginBottom: 2 },
-  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  resultInfo: { flex: 1, gap: 2 },
 });

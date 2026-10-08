@@ -17,7 +17,14 @@ jest.mock('expo-router', () => {
   const { Text } = jest.requireActual('react-native');
   const Tabs = ({ children }: { children: ReactNode }) => children;
   // A declared tab renders its localized title.
-  Tabs.Screen = function TabScreenTitle({ options }: { options?: { title?: string } }) {
+  Tabs.Screen = function TabScreenTitle({
+    options,
+  }: {
+    options?: { title?: string; href?: string | null };
+  }) {
+    // href: null marks a routable-but-hidden screen (Find Care, P8.T4) —
+    // it must not render a tab title.
+    if (options?.href === null) return null;
     return options?.title ? <Text>{options.title}</Text> : null;
   };
   return {
@@ -74,18 +81,24 @@ describe('Patient tabs layout guard (P7.T1)', () => {
     expect(mockRedirect).toHaveBeenCalledWith(expect.objectContaining({ href: '/practice' }));
   });
 
-  it('a patient session gets the patient tabs (no redirect)', () => {
+  it('a patient session gets the 5-tab set (P8.T4), no redirect', () => {
     mockUseAuth.mockReturnValue({
       status: 'authenticated',
       session: { token: 't', user: user('patient') } satisfies AuthSession,
     });
     const screen = renderLayout();
     expect(mockRedirect).not.toHaveBeenCalled();
-    // The four patient tabs render with their localized titles.
+    // P8.T4 tab set, in order: Home, Appointments, Chats, Health Record,
+    // Account — Chats + Health Record are the MVP placeholders.
     expect(screen.getByText('Home')).toBeTruthy();
     expect(screen.getByText('Appointments')).toBeTruthy();
-    expect(screen.getByText('Find Care')).toBeTruthy();
-    expect(screen.getByText('Profile')).toBeTruthy();
+    expect(screen.getByText('Chats')).toBeTruthy();
+    expect(screen.getByText('Health Record')).toBeTruthy();
+    expect(screen.getByText('Account')).toBeTruthy();
+    // Find Care is routable but NOT a tab anymore (href: null) — it is
+    // reached from the home search entry + category chips instead.
+    expect(screen.queryByText('Find Care')).toBeNull();
+    expect(screen.queryByText('Profile')).toBeNull();
   });
 
   it('an admin session rides the patient app (out of mobile scope)', () => {

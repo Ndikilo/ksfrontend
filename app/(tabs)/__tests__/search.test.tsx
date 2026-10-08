@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react-native';
+import { render, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 
 import '@/i18n';
@@ -10,17 +10,26 @@ import SearchScreen from '../search';
 // The icon package drags in expo-font/expo-asset native modules — stub it.
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
-// Expo Router seam — result rows navigate to the practitioner page.
+// Expo Router seam — result rows navigate to the practitioner page; the
+// home quick-category chips (P8.T2) deep-link in with a `category` param,
+// configurable per test.
+const mockPush = jest.fn();
+let mockParams: Record<string, string> = {};
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn() },
+  router: { push: (...args: unknown[]) => mockPush(...args) },
+  useLocalSearchParams: () => mockParams,
 }));
 
 // API seam — services only (isApiError comes from the barrel's helpers).
+// consultationTypeParam is part of the services barrel and runs BEFORE the
+// request, so the mock must carry the real join behavior.
 const mockSearch = jest.fn();
 const mockProfessions = jest.fn();
 jest.mock('@/api/services', () => ({
   searchService: { practitioners: (...args: unknown[]) => mockSearch(...args) },
   referenceService: { professions: (...args: unknown[]) => mockProfessions(...args) },
+  consultationTypeParam: (types: string[]) =>
+    types.length > 0 ? types.join(',') : undefined,
 }));
 
 // Screen chrome — stub SafeAreaView (no provider in tests).
@@ -63,6 +72,7 @@ const renderScreen = () =>
 
 beforeEach(() => {
   jest.resetAllMocks();
+  mockParams = {};
   mockProfessions.mockResolvedValue({ data: [PROFESSION], meta: {} });
   mockSearch.mockResolvedValue({
     data: [HOME_VISIT_PRACTITIONER],
@@ -90,5 +100,73 @@ describe('SearchScreen consultation filter chips', () => {
     // The other types keep their labels too.
     expect(screen.getByText('In person')).toBeTruthy();
     expect(screen.getByText('Video')).toBeTruthy();
+  });
+});
+
+describe('SearchScreen home-category pre-filters (P8.T2)', () => {
+  it('a specialty category (cardiologist) sends the specialty stem on the FIRST query', async () => {
+    mockParams = { category: 'cardiologist' };
+    const screen = renderScreen();
+
+    await waitFor(() =>
+      expect(mockSearch).toHaveBeenCalledWith(
+        expect.objectContaining({ specialty: 'Cardiolog' }),
+      ),
+    );
+    // The pre-filter is never invisible: it renders as a selected chip.
+    expect(screen.getByText(/Cardiologist/)).toBeTruthy();
+  });
+
+  it('a specialty category (dentists) maps to the dentistry stem', async () => {
+    mockParams = { category: 'dentists' };
+    const screen = renderScreen();
+
+    await waitFor(() =>
+      expect(mockSearch).toHaveBeenCalledWith(expect.objectContaining({ specialty: 'Dentist' })),
+    );
+    expect(screen.getByText(/Dentists/)).toBeTruthy();
+  });
+
+  it('a profession category (nurses) resolves the professionId from the catalog', async () => {
+    mockParams = { category: 'nurses' };
+    renderScreen();
+
+    // The first query fires before the professions list arrives (no filter
+    // yet); once it lands, the Nurse profession is resolved by name and the
+    // query re-runs with its backend id.
+    await waitFor(() =>
+      expect(mockSearch).toHaveBeenCalledWith(
+        expect.objectContaining({ professionId: 'prof-nurse' }),
+      ),
+    );
+  });
+
+  it('a profession category (doctors) matches the doctor profession by name', async () => {
+    mockParams = { category: 'doctors' };
+    mockProfessions.mockResolvedValue({
+      data: [
+        PROFESSION,
+        { id: 'prof-doctor', nameEn: 'Doctor (General Practitioner)', nameFr: 'Médecin', prefixHint: null },
+      ],
+      meta: {},
+    });
+    renderScreen();
+
+    await waitFor(() =>
+      expect(mockSearch).toHaveBeenCalledWith(
+        expect.objectContaining({ professionId: 'prof-doctor' }),
+      ),
+    );
+  });
+
+  it('an unknown category is ignored (plain search)', async () => {
+    mockParams = { category: 'surgery-from-a-stale-link' };
+    const screen = renderScreen();
+
+    await screen.findByText('Home visit');
+    expect(mockSearch).toHaveBeenCalledWith(
+      expect.not.objectContaining({ specialty: expect.anything(), professionId: expect.anything() }),
+    );
+    expect(screen.queryByText(/Cardiologist/)).toBeNull();
   });
 });

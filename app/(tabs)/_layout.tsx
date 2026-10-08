@@ -12,6 +12,12 @@ import { useTheme } from '@/theme';
  * practitioner console (`/practice`), never the patient tabs. The guard runs
  * at session restore AND at sign-in, and a mid-session session change
  * re-renders this layout so the user moves to the right group.
+ *
+ * P8.T4 tab set (Homepage PRD §3.7): exactly Home, Appointments, Chats and
+ * Health Record (both "coming soon" placeholders), and Account (the existing
+ * profile). Find Care stays routable at `/search` for the home search entry
+ * and category chips — it is just no longer a tab (`href: null`), so deep
+ * links like `/search?category=nurses` keep working.
  */
 export default function TabsLayout() {
   const theme = useTheme();
@@ -30,10 +36,21 @@ export default function TabsLayout() {
   const TabAppointmentsIcon = ({ focused }: { focused: boolean }) => (
     <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={22} color={iconColor(focused)} />
   );
-  const TabSearchIcon = ({ focused }: { focused: boolean }) => (
-    <Ionicons name={focused ? 'search' : 'search-outline'} size={22} color={iconColor(focused)} />
+  const TabChatsIcon = ({ focused }: { focused: boolean }) => (
+    <Ionicons
+      name={focused ? 'chatbubbles' : 'chatbubbles-outline'}
+      size={22}
+      color={iconColor(focused)}
+    />
   );
-  const TabProfileIcon = ({ focused }: { focused: boolean }) => (
+  const TabHealthRecordIcon = ({ focused }: { focused: boolean }) => (
+    <Ionicons
+      name={focused ? 'document-text' : 'document-text-outline'}
+      size={22}
+      color={iconColor(focused)}
+    />
+  );
+  const TabAccountIcon = ({ focused }: { focused: boolean }) => (
     <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={iconColor(focused)} />
   );
 
@@ -58,13 +75,19 @@ export default function TabsLayout() {
         options={{ title: t('tabs.appointments'), tabBarIcon: TabAppointmentsIcon }}
       />
       <Tabs.Screen
-        name="search"
-        options={{ title: t('tabs.search'), tabBarIcon: TabSearchIcon }}
+        name="chats"
+        options={{ title: t('tabs.chats'), tabBarIcon: TabChatsIcon }}
+      />
+      <Tabs.Screen
+        name="health-record"
+        options={{ title: t('tabs.healthRecord'), tabBarIcon: TabHealthRecordIcon }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ title: t('tabs.profile'), tabBarIcon: TabProfileIcon }}
+        options={{ title: t('tabs.account'), tabBarIcon: TabAccountIcon }}
       />
+      {/* Routable but not a tab: reached from the home search entry + chips. */}
+      <Tabs.Screen name="search" options={{ href: null }} />
     </Tabs>
   );
 }

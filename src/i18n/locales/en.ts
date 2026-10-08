@@ -133,8 +133,21 @@ export const en = {
   tabs: {
     home: 'Home',
     appointments: 'Appointments',
-    search: 'Find Care',
-    profile: 'Profile',
+    chats: 'Chats',
+    healthRecord: 'Health Record',
+    account: 'Account',
+  },
+
+  // P8.T4 placeholder tabs — present in the bottom nav, clearly not built
+  // yet, with no affordance that could pretend to work.
+  placeholders: {
+    comingSoon: 'Coming soon',
+    chatsTitle: 'Chats',
+    chatsMessage:
+      'Secure messaging with your practitioner is coming soon. We will let you know as soon as it opens.',
+    healthRecordTitle: 'Health Record',
+    healthRecordMessage:
+      'Your prescriptions, documents and visit history will be gathered here — coming soon.',
   },
 
   appointments: {
@@ -241,6 +254,8 @@ export const en = {
 
   practitioner: {
     verified: 'Verified',
+    // Row announcement for discovery cards — the name leads (standard §2).
+    cardA11yLabel: '{{name}}, {{profession}}',
     yearsExperience: '{{years}} yrs experience',
     nextAvailable: 'Next available {{when}}',
     about: 'About',
@@ -291,15 +306,49 @@ export const en = {
     slotChipLabel: '{{time}}, {{types}} — {{state}}',
   },
 
+  // Homepage (P8). Copy is product-specific on purpose: the core persona
+  // books across timezones for dependents back home. The wave emoji is the
+  // sanctioned greeting exception (standard §3).
   home: {
-    greeting: 'Hi, {{name}} 👋',
-    subtitle: "Here's what's happening with your health today.",
-    nextAppointment: 'Next appointment',
-    scheduled: 'Scheduled',
-    appointmentWith: 'Dr. Amara Diallo — General check-up',
-    appointmentWhen: 'Tomorrow at 10:30 AM',
-    tipsTitle: 'Quick tips',
-    tipsBody: 'Stay hydrated and aim for 30 minutes of activity today. Small steps add up.',
+    greetingMorning: 'Good morning, {{name}} 👋',
+    greetingAfternoon: 'Good afternoon, {{name}} 👋',
+    greetingEvening: 'Good evening, {{name}} 👋',
+    greetingMorningNameless: 'Good morning 👋',
+    greetingAfternoonNameless: 'Good afternoon 👋',
+    greetingEveningNameless: 'Good evening 👋',
+    subtitle: 'Book verified doctors and nurses — for you or your family back home.',
+    searchPlaceholder: 'Find a doctor, nurse or specialty…',
+    searchAction: 'Search for a practitioner',
+    categoriesTitle: 'Browse by category',
+    categories: {
+      doctors: 'Doctors',
+      nurses: 'Nurses',
+      cardiologist: 'Cardiologist',
+      dentists: 'Dentists',
+    },
+    nearby: {
+      // Honest header: without a location basis the list is NOT "near you" —
+      // it is the top-rated directory. With a city it says so.
+      titleRated: 'Top-rated doctors',
+      titleCity: 'Doctors in {{city}}',
+      seeAll: 'See all',
+      emptyTitle: 'No practitioners yet',
+      emptyMessage: 'Verified practitioners will appear here as they join KanaSanté.',
+      browseAll: 'Browse all practitioners',
+      refetchFailed: 'Could not refresh — the list shown is the last one loaded.',
+    },
+    tips: {
+      title: 'Health tips',
+      sugarTitle: 'How much sugar is okay?',
+      sugarBody:
+        'Sugary drinks are the easiest place to cut back: keeping them for special occasions protects teeth and steady energy — for you and the children you care for.',
+      sleepTitle: 'Want to sleep better?',
+      sleepBody:
+        'A steady bedtime — weekends included — and screens set aside an hour before make falling asleep easier. Persistent tiredness deserves a consultation.',
+      sodaTitle: 'Should soda be a daily drink?',
+      sodaBody:
+        'Water covers everyday thirst — soda is a treat, not a staple. Swapping one daily soda for water already removes a large share of your added sugar.',
+    },
   },
 
   // Practitioner console (P7) — the doctor/nurse tab group.
