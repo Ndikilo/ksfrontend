@@ -6,7 +6,7 @@ import { FlatList, StyleSheet, View } from 'react-native';
 
 import { appointmentsService } from '@/api';
 import { AppointmentRow } from '@/components/appointments';
-import { EmptyState, ErrorState } from '@/components/feedback';
+import { Banner, EmptyState, ErrorState } from '@/components/feedback';
 import { Button, Chip, Screen, Spinner, Text } from '@/components/ui';
 import { useAsync } from '@/hooks';
 import { useTheme } from '@/theme';
@@ -156,11 +156,21 @@ export default function AgendaScreen() {
         />
       </View>
 
+      {/* Refetch failure while stale rows stay mounted must be visible, not
+          silent (the patient-tab pattern, codified standard §2). */}
+      {list.error ? <Banner message={list.error.message} tone="error" /> : null}
+
       <FlatList
         style={styles.listFlex}
         data={shown}
         keyExtractor={(appointment) => appointment.id}
-        renderItem={({ item }) => <AppointmentRow appointment={item} />}
+        renderItem={({ item }) => (
+          <AppointmentRow
+            appointment={item}
+            // WHO each booking is for — the persona-naming rule (Review 012).
+            contextName={item.patientName ?? undefined}
+          />
+        )}
         ListEmptyComponent={emptyState}
         ListFooterComponent={
           isLoadingMore ? (

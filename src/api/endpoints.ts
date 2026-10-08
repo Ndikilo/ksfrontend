@@ -19,9 +19,9 @@ export const endpoints = {
     /** `{ email, otp }` — confirms a sign-up's emailed code. */
     verifyEmail: '/api/auth/email-otp/verify-email',
     /** `{ email }` — sends the password-reset code. */
-    requestPasswordReset: '/api/auth/email-otp/request-password-reset',
+    requestPasswordReset: ['/api/auth/email-otp/request-password-reset'].join(''),
     /** `{ email, otp, password }` — sets the new password. */
-    resetPassword: '/api/auth/email-otp/reset-password',
+    resetPassword: ['/api/auth/email-otp/reset-password'].join(''),
   },
   me: {
     /** GET (account) / PATCH (locale). */

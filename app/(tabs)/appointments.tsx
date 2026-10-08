@@ -162,7 +162,13 @@ export default function AppointmentsScreen() {
         style={styles.listFlex}
         data={shown}
         keyExtractor={(appointment) => appointment.id}
-        renderItem={({ item }) => <AppointmentRow appointment={item} />}
+        renderItem={({ item }) => (
+          <AppointmentRow
+            appointment={item}
+            // The row names the practitioner (persona naming, Review 012).
+            contextName={item.practitionerName ?? undefined}
+          />
+        )}
         ListEmptyComponent={emptyState}
         ListFooterComponent={
           isLoadingMore ? (

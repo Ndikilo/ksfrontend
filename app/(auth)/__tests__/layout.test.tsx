@@ -8,11 +8,14 @@ import type { AuthSession, User } from '@/types';
 import AuthLayout from '../_layout';
 
 // Expo Router seam — record Redirect targets; the inner Stack renders children.
+// `useLocalSearchParams` is configurable so tests can carry the deep-return
+// `redirect` param the booking flow's sign-in gate passes through.
 const mockRedirect = jest.fn(({ href }: { href: string }) => null);
+let mockParams: { redirect?: string } = {};
 jest.mock('expo-router', () => ({
   Redirect: (props: { href: string }) => mockRedirect(props),
   Stack: ({ children }: { children: ReactNode }) => children,
-  useLocalSearchParams: () => ({}),
+  useLocalSearchParams: () => mockParams,
 }));
 
 // Auth seam — the guard reads status + session role from the store. The real
@@ -42,6 +45,7 @@ const renderLayout = () =>
 
 beforeEach(() => {
   jest.resetAllMocks();
+  mockParams = {};
 });
 
 describe('Auth group redirect (P7.T1)', () => {
@@ -67,5 +71,44 @@ describe('Auth group redirect (P7.T1)', () => {
     mockUseAuth.mockReturnValue({ status: 'unauthenticated', session: null });
     renderLayout();
     expect(mockRedirect).not.toHaveBeenCalled();
+  });
+});
+
+describe('Auth group deep-return vs role routing (Review 012 minor 1)', () => {
+  it('a practitioner with a redirect param still lands on the console, NOT the redirect', () => {
+    // Completing a patient-flow sign-in gate must not drop a practitioner
+    // into a patient-only flow that would 403 at submit.
+    mockParams = { redirect: '/booking/pro-1' };
+    mockUseAuth.mockReturnValue({
+      status: 'authenticated',
+      session: { token: 't', user: user('nurse') } satisfies AuthSession,
+    });
+    renderLayout();
+    expect(mockRedirect).toHaveBeenCalledWith(expect.objectContaining({ href: '/practice' }));
+    expect(mockRedirect).not.toHaveBeenCalledWith(
+      expect.objectContaining({ href: '/booking/pro-1' }),
+    );
+  });
+
+  it('a patient with a redirect param has the deep-return honored', () => {
+    mockParams = { redirect: '/booking/pro-1' };
+    mockUseAuth.mockReturnValue({
+      status: 'authenticated',
+      session: { token: 't', user: user('patient') } satisfies AuthSession,
+    });
+    renderLayout();
+    expect(mockRedirect).toHaveBeenCalledWith(
+      expect.objectContaining({ href: '/booking/pro-1' }),
+    );
+  });
+
+  it('a non-path redirect (protocol-relative) is ignored for patients too', () => {
+    mockParams = { redirect: '//evil.example.com' };
+    mockUseAuth.mockReturnValue({
+      status: 'authenticated',
+      session: { token: 't', user: user('patient') } satisfies AuthSession,
+    });
+    renderLayout();
+    expect(mockRedirect).toHaveBeenCalledWith(expect.objectContaining({ href: '/(tabs)' }));
   });
 });

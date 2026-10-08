@@ -297,6 +297,16 @@ export type Appointment = {
   lateCancellation: boolean;
   cancelledAt: string | null;
   cancelledByUserId: string | null;
+  /**
+   * LIST-only persona names (P7.T1): each row names the OTHER party.
+   * `patientName` rides practitioner-scope rows (the person booked for —
+   * the dependent when booked for one, else the account holder);
+   * `practitionerName` rides patient-scope rows. The caller's own side is
+   * null, and single-appointment responses name neither side (the caller is
+   * always a party to what they fetched) — mirrors the backend payload.
+   */
+  patientName: string | null;
+  practitionerName: string | null;
 };
 
 /** The practitioner-configurable cancellation policy applied to NEW bookings. */

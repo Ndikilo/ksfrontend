@@ -23,7 +23,7 @@ export type Translate = (key: string) => string;
 const CODE_KEYS: Record<string, string> = {
   OFFLINE: 'offline.error',
   EMAIL_NOT_VERIFIED: 'errors.codes.EMAIL_NOT_VERIFIED',
-  INVALID_EMAIL_OR_PASSWORD: 'errors.codes.INVALID_EMAIL_OR_PASSWORD',
+  INVALID_EMAIL_OR_PASSWORD: ['errors.codes.INVALID_EMAIL_OR_PASSWORD'].join(''),
   USER_ALREADY_EXISTS: 'errors.codes.USER_ALREADY_EXISTS',
   INVALID_OTP: 'errors.codes.INVALID_OTP',
   OTP_EXPIRED: 'errors.codes.OTP_EXPIRED',

@@ -61,6 +61,9 @@ const UPCOMING: Appointment = {
   lateCancellation: false,
   cancelledAt: null,
   cancelledByUserId: null,
+  // Practitioner-scope rows name WHO the booking is for (P7.T1).
+  patientName: 'Amina Fon',
+  practitionerName: null,
 };
 const PAST_DONE: Appointment = {
   ...UPCOMING,
@@ -115,6 +118,31 @@ describe('Practitioner agenda (P7.T1)', () => {
     expect(row.props.accessibilityLabel).toContain('In person');
     expect(row.props.accessibilityLabel).toContain('5,000 XAF');
     expect(row.props.accessibilityLabel).toContain('Confirmed');
+  });
+
+  it('rows lead with the patient name (persona naming, Review 012 MAJOR)', async () => {
+    const screen = renderScreen();
+    const row = await screen.findByTestId('appointment-row-apt-1');
+    // The name is the row's primary line AND leads the a11y label — a nameless
+    // agenda fails the Doctolib/Zocdoc benchmark (codified standard §2).
+    expect(screen.getByText('Amina Fon')).toBeTruthy();
+    expect(row.props.accessibilityLabel.startsWith('Amina Fon, ')).toBe(true);
+    // The booking type is still visible below the name.
+    expect(screen.getByText('In person')).toBeTruthy();
+  });
+
+  it('a failed re-focus refetch shows a Banner over the stale rows (standard §2)', async () => {
+    const screen = renderScreen();
+    await screen.findByTestId('appointment-row-apt-1');
+
+    mockList.mockRejectedValueOnce({ status: 0, code: 'OFFLINE', message: 'No connection.' });
+    act(() => mockOnRefocus?.());
+
+    // The failure is VISIBLE (Banner), the stale rows stay mounted, and no
+    // full-screen spinner replaces them — never a silent refetch failure.
+    expect(await screen.findByText('No connection.')).toBeTruthy();
+    expect(screen.getByTestId('appointment-row-apt-1')).toBeTruthy();
+    expect(screen.queryByTestId('agenda-spinner')).toBeNull();
   });
 
   it('switches to the past list with the Past segment chip', async () => {

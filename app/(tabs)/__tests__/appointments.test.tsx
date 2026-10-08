@@ -61,6 +61,9 @@ const UPCOMING: Appointment = {
   lateCancellation: false,
   cancelledAt: null,
   cancelledByUserId: null,
+  // Patient-scope rows name the practitioner (P7.T1).
+  patientName: null,
+  practitionerName: 'Dr. Emmanuel Ndongo',
 };
 const SOONER: Appointment = { ...UPCOMING, id: 'apt-2', startsAt: '2030-01-10T09:00:00.000Z' };
 const PAST_DONE: Appointment = {
@@ -132,6 +135,15 @@ describe('AppointmentsScreen (P4.T2)', () => {
     expect(row.props.accessibilityLabel).toContain('In person');
     expect(row.props.accessibilityLabel).toContain('5,000 XAF');
     expect(row.props.accessibilityLabel).toContain('Pending');
+  });
+
+  it('rows lead with the practitioner name (persona naming, Review 012 MAJOR)', async () => {
+    const screen = renderScreen();
+    const row = await screen.findByTestId('appointment-row-apt-1');
+    // Patient-scope rows name the other party: the practitioner leads the row
+    // and its a11y label.
+    expect(screen.getByText('Dr. Emmanuel Ndongo')).toBeTruthy();
+    expect(row.props.accessibilityLabel.startsWith('Dr. Emmanuel Ndongo, ')).toBe(true);
   });
 
   it('switches to the past list with the Past segment chip', async () => {

@@ -73,6 +73,9 @@ const APPOINTMENT: Appointment = {
   lateCancellation: false,
   cancelledAt: null,
   cancelledByUserId: null,
+  // List-only persona names (P7.T1) — single-appointment responses name neither side.
+  patientName: null,
+  practitionerName: null,
 };
 
 const PENDING_CHARGE: Payment = {
