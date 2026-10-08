@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, StyleSheet, View } from 'react-native';
@@ -7,7 +7,7 @@ import { FlatList, StyleSheet, View } from 'react-native';
 import { appointmentsService } from '@/api';
 import { AppointmentRow } from '@/components/appointments';
 import { Banner, EmptyState, ErrorState } from '@/components/feedback';
-import { Button, Chip, Screen, Spinner, Text } from '@/components/ui';
+import { Button, Chip, IconButton, Screen, Spinner, Text } from '@/components/ui';
 import { useAsync } from '@/hooks';
 import { useTheme } from '@/theme';
 import type { Appointment } from '@/types';
@@ -116,9 +116,7 @@ export default function AgendaScreen() {
         <ErrorState error={list.error} onRetry={list.refetch} />
       </Screen>
     );
-  }
-
-  const emptyState =
+  }  const emptyState =
     segment === 'upcoming' ? (
       <EmptyState
         icon={<Ionicons name="calendar-outline" size={48} color={theme.colors.textMuted} />}
@@ -137,7 +135,17 @@ export default function AgendaScreen() {
     // Not a ScrollView screen: the FlatList owns scrolling so virtualization
     // and onEndReached work (history is unbounded).
     <Screen scroll={false} contentStyle={{ gap: theme.spacing.lg }}>
-      <Text variant="title">{t('practice.agendaTitle')}</Text>
+      <View style={styles.headerRow}>
+        <Text variant="title">{t('practice.agendaTitle')}</Text>
+        {/* One-tap entry to calendar management (P7.T2) — the Doctolib-style
+            availability affordance lives in the agenda header. */}
+        <IconButton
+          name="calendar-outline"
+          variant="ghost"
+          accessibilityLabel={t('practice.manageAvailability')}
+          onPress={() => router.push('/practice/availability')}
+        />
+      </View>
 
       <View style={styles.segments}>
         <Chip
@@ -192,6 +200,7 @@ export default function AgendaScreen() {
 
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   segments: { flexDirection: 'row', gap: 8 },
   segment: { flex: 1 },
   list: { gap: 12, paddingBottom: 24, flexGrow: 1 },

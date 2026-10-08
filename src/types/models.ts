@@ -244,6 +244,47 @@ export type PractitionerDetail = {
   offerings: PractitionerOffering[];
 };
 
+// --- Practitioner availability console (P7.T2) ------------------------------
+
+/**
+ * A weekly availability rule (GET/PUT /v1/practitioners/me/availability/rules).
+ * Times are clinic-local "HH:MM"; the clinic timezone is a backend constant.
+ */
+export type AvailabilityRule = {
+  id: ID;
+  /** JavaScript weekday: Sunday = 0 … Saturday = 6. */
+  weekday: number;
+  startTime: string;
+  endTime: string;
+  /** Bookable slot length (minutes) the rule's window is cut into. */
+  slotDurationMin: number;
+  consultationTypes: ConsultationType[];
+  locationId: ID | null;
+  timezone: 'Africa/Douala';
+  /** Optional effective window (ISO dates, inclusive). */
+  validFrom: string | null;
+  validTo: string | null;
+};
+
+/** A rule as submitted — the rules endpoint REPLACES the whole weekly set. */
+export type AvailabilityRuleInput = Omit<AvailabilityRule, 'id'>;
+
+/** A date-specific exception: a closed day/hours (`blocked`) or added windows (`extra`). */
+export type AvailabilityException = {
+  id: ID;
+  /** ISO date (YYYY-MM-DD), clinic-local. */
+  date: string;
+  kind: 'blocked' | 'extra';
+  /** null/null = all day for `blocked`; `extra` always carries a window. */
+  startTime: string | null;
+  endTime: string | null;
+  consultationTypes: ConsultationType[] | null;
+  locationId: ID | null;
+};
+
+/** An exception as submitted to `POST /v1/practitioners/me/availability/exceptions`. */
+export type AvailabilityExceptionInput = Omit<AvailabilityException, 'id'>;
+
 // --- Booking (P4) -----------------------------------------------------------
 
 /** Appointment lifecycle: pending → confirmed → cancelled | completed | no_show. */

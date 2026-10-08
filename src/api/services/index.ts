@@ -16,3 +16,8 @@ export {
 } from './appointment.service';
 export { dependentsService } from './dependents.service';
 export { paymentsService, type InitiatePaymentInput } from './payment.service';
+export {
+  availabilityService,
+  type AvailabilityRulesPage,
+  type AvailabilityExceptionsPage,
+} from './availability.service';

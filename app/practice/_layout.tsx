@@ -47,6 +47,9 @@ export default function PracticeLayout() {
         name="index"
         options={{ title: t('practice.tabAgenda'), tabBarIcon: TabAgendaIcon }}
       />
+      {/* Calendar management (P7.T2) — reached from the agenda header in one
+          tap, never a tab bar slot (the bar stays agenda + profile). */}
+      <Tabs.Screen name="availability" options={{ href: null }} />
       <Tabs.Screen
         name="profile"
         options={{ title: t('practice.tabProfile'), tabBarIcon: TabProfileIcon }}

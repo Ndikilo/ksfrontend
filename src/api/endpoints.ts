@@ -42,6 +42,13 @@ export const endpoints = {
     byId: (id: string) => `/v1/practitioners/${id}`,
     /** Expanded bookable slots (`from`/`to` ISO params) used by the booking flow. */
     availability: (id: string) => `/v1/practitioners/${id}/availability`,
+    /** The signed-in practitioner's weekly rules (GET; PUT replaces the set). */
+    myAvailabilityRules: '/v1/practitioners/me/availability/rules',
+    /** The signed-in practitioner's date exceptions (GET / POST). */
+    myAvailabilityExceptions: '/v1/practitioners/me/availability/exceptions',
+    /** DELETE one exception (no update endpoint — edits are create+delete). */
+    myAvailabilityExceptionById: (id: string) =>
+      `/v1/practitioners/me/availability/exceptions/${id}`,
     /** The signed-in practitioner's cancellation policy (GET / PUT). */
     bookingPolicy: '/v1/practitioners/me/booking-policy',
   },
