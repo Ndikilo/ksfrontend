@@ -159,6 +159,20 @@ async function savePending(next: PendingAuth | null): Promise<void> {
   }
 }
 
+/**
+ * Seed the pending-registration store for an account created OUTSIDE the
+ * email sign-up form (P8.T6 phone-OTP signup): after the phone verify returns
+ * `nextStep: 'verify-email'`, the standard email-verification flow runs — and
+ * with the credentials seeded here it signs straight in after the emailed code
+ * instead of falling back to SESSION_REQUIRED (manual sign-in).
+ */
+export async function seedPendingRegistration(args: {
+  email: string;
+  password?: string;
+}): Promise<void> {
+  await savePending({ email: args.email.trim(), password: args.password });
+}
+
 // --- Real backend calls -------------------------------------------------------
 
 const currentLocale = (): Locale => asLocale(i18n.language);

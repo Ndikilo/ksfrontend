@@ -9,9 +9,10 @@ import AuthLayout from '../_layout';
 
 // Expo Router seam — record Redirect targets; the inner Stack renders children.
 // `useLocalSearchParams` is configurable so tests can carry the deep-return
-// `redirect` param the booking flow's sign-in gate passes through.
+// `redirect` param the booking flow's sign-in gate passes through — and the
+// `mode: 'attach'` param the phone-OTP screens use for signed-in users.
 const mockRedirect = jest.fn(({ href }: { href: string }) => null);
-let mockParams: { redirect?: string } = {};
+let mockParams: { redirect?: string; mode?: string } = {};
 jest.mock('expo-router', () => ({
   Redirect: (props: { href: string }) => mockRedirect(props),
   Stack: ({ children }: { children: ReactNode }) => children,
@@ -104,6 +105,30 @@ describe('Auth group deep-return vs role routing (Review 012 minor 1)', () => {
 
   it('a non-path redirect (protocol-relative) is ignored for patients too', () => {
     mockParams = { redirect: '//evil.example.com' };
+    mockUseAuth.mockReturnValue({
+      status: 'authenticated',
+      session: { token: 't', user: user('patient') } satisfies AuthSession,
+    });
+    renderLayout();
+    expect(mockRedirect).toHaveBeenCalledWith(expect.objectContaining({ href: '/(tabs)' }));
+  });
+});
+
+describe('Auth group attach mode (P8.T6)', () => {
+  it('a signed-in user on the phone-OTP screens in attach mode stays on the stack', () => {
+    // Profile → "Add a phone number" runs the flow AS a signed-in user; the
+    // authenticated redirect must not bounce them out mid-OTP.
+    mockParams = { mode: 'attach' };
+    mockUseAuth.mockReturnValue({
+      status: 'authenticated',
+      session: { token: 't', user: user('patient') } satisfies AuthSession,
+    });
+    renderLayout();
+    expect(mockRedirect).not.toHaveBeenCalled();
+  });
+
+  it('the redirect still applies to every other screen while signed in', () => {
+    mockParams = { mode: 'signup' };
     mockUseAuth.mockReturnValue({
       status: 'authenticated',
       session: { token: 't', user: user('patient') } satisfies AuthSession,

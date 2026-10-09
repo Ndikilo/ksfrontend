@@ -3,6 +3,7 @@ export {
   maskEmail,
   toE164,
   expirePendingPassword,
+  seedPendingRegistration,
 } from './auth.service';
 export { accountService } from './account.service';
 export { referenceService } from './reference.service';
@@ -22,3 +23,13 @@ export {
   type AvailabilityExceptionsPage,
 } from './availability.service';
 export { practitionerService } from './practitioner.service';
+export {
+  phoneService,
+  normalizePhoneE164,
+  maskPhone,
+  getPendingPhonePassword,
+  type PhoneStartInput,
+  type PhoneStartResult,
+  type PhoneVerifyResult,
+  type PhoneDeliveryChannel,
+} from './phone.service';

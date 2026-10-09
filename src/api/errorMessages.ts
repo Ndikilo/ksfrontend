@@ -28,6 +28,19 @@ const CODE_KEYS: Record<string, string> = {
   INVALID_OTP: 'errors.codes.INVALID_OTP',
   OTP_EXPIRED: 'errors.codes.OTP_EXPIRED',
   SESSION_REQUIRED: 'errors.codes.SESSION_REQUIRED',
+  // Phone-OTP registration (P8.T6) — stable /v1 codes (ksbackend
+  // http/error-mapper.ts); screens may override with richer, parameterized
+  // copy but every code has an honest localized fallback here.
+  OTP_INVALID: 'errors.codes.OTP_INVALID',
+  OTP_ALREADY_USED: 'errors.codes.OTP_ALREADY_USED',
+  OTP_LOCKED: 'errors.codes.OTP_LOCKED',
+  OTP_SEND_THROTTLED: 'errors.codes.OTP_SEND_THROTTLED',
+  OTP_RESEND_COOLDOWN: 'errors.codes.OTP_RESEND_COOLDOWN',
+  OTP_DELIVERY_UNAVAILABLE: 'errors.codes.OTP_DELIVERY_UNAVAILABLE',
+  PHONE_ALREADY_VERIFIED: 'errors.codes.PHONE_ALREADY_VERIFIED',
+  // Client-side: the in-memory phone-signup password is gone (app restart
+  // mid-flow) — a resend can no longer satisfy the start contract.
+  PHONE_FLOW_EXPIRED: 'errors.codes.PHONE_FLOW_EXPIRED',
 };
 
 /** Localized copy per HTTP status for paths without a usable server message. */

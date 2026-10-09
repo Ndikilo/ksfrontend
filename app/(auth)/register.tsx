@@ -140,6 +140,11 @@ export default function RegisterScreen() {
 
       <Button title={t('common.continue')} fullWidth onPress={onContinue} />
       <AuthPrompt
+        text={t('phoneAuth.entryPrompt')}
+        actionLabel={t('phoneAuth.entryAction')}
+        onPress={() => router.push('/register-phone')}
+      />
+      <AuthPrompt
         text={t('common.alreadyHaveAccount')}
         actionLabel={t('common.login')}
         onPress={() => router.replace('/login')}

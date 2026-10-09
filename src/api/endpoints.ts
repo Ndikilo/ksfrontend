@@ -22,6 +22,13 @@ export const endpoints = {
     requestPasswordReset: ['/api/auth/email-otp/request-password-reset'].join(''),
     /** `{ email, otp, password }` — sets the new password. */
     resetPassword: ['/api/auth/email-otp/reset-password'].join(''),
+    // Phone-number registration (P8.T6, ksbackend modules/phone). Called
+    // WITHOUT a session these are the phone SIGNUP endpoints (email/name/
+    // password required); WITH a session `start` ATTACHES the caller's phone.
+    /** POST — `{ phone, email, name, password, locale? }` → start/re-send OTP. */
+    phoneStart: '/v1/auth/phone/start',
+    /** POST — `{ phone, code }` → `{ verified, phone, emailVerified, nextStep }`. */
+    phoneVerify: '/v1/auth/phone/verify',
   },
   me: {
     /** GET (account) / PATCH (locale). */

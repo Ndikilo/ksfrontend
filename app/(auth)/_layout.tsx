@@ -15,9 +15,11 @@ import { isPractitionerRole, tabsRouteForRole, useAuth } from '@/store';
 export default function AuthLayout() {
   const { status, session } = useAuth();
   // Params of the focused (auth) screen — login or verify-otp both carry the
-  // redirect through their hop of the flow.
-  const { redirect } = useLocalSearchParams<{ redirect?: string }>();
-  if (status === 'authenticated') {
+  // redirect through their hop of the flow. `mode: 'attach'` marks the
+  // phone-OTP screens (P8.T6) being used BY a signed-in user (Profile → add a
+  // phone number): the redirect below must not bounce them out mid-flow.
+  const { redirect, mode } = useLocalSearchParams<{ redirect?: string; mode?: string }>();
+  if (status === 'authenticated' && mode !== 'attach') {
     // Deep-return is safe only when it cannot cross the role boundary: safe
     // in-app absolute paths (never protocol-relative or external URLs) for
     // non-practitioners; practitioners always take the role table's answer.

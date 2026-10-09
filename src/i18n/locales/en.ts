@@ -80,6 +80,32 @@ export const en = {
     reenterPassword: ['Re-enter password'].join(''),
   },
 
+  // Phone-number registration (P8.T6) — signup entry from the register form,
+  // attach entry from the profile tab. The backend delivers the OTP via SMS
+  // first, falls back to email, and only ever returns `devCode` in sandbox/dev
+  // mode (never in prod/staging) — the sandbox banner renders from that.
+  phoneAuth: {
+    entryPrompt: 'Prefer to use your phone?',
+    entryAction: 'Continue with phone number',
+    titleSignup: 'Sign up with your phone',
+    subtitleSignup:
+      'We text you a 6-digit code to verify your number, then set up your account.',
+    titleAttach: 'Add a phone number',
+    subtitleAttach: 'We text a 6-digit code to confirm this number belongs to you.',
+    phoneInvalid: 'Enter a valid Cameroon number, e.g. 670123456 or +237670123456.',
+    emailHint: 'If SMS can’t reach this number, the code is sent to this email instead.',
+    codeSentTo: 'Enter the 6-digit code sent to {{target}}',
+    sentByEmail:
+      'SMS isn’t available for this number right now, so we sent the code to {{target}} instead.',
+    devCode: 'Sandbox: your code is {{code}}',
+    locked:
+      'Too many incorrect codes. This number is locked for {{minutes}} minutes — please try again later.',
+    emailFallbackPrompt: 'Can’t receive texts right now?',
+    emailFallbackAction: 'Sign up with email instead',
+    signInNotice: 'Your account is ready. Sign in with your email and password.',
+    attachSuccess: 'Your phone number has been verified.',
+  },
+
   otp: {
     title: 'OTP confirmation',
     subtitleRegister:
@@ -555,6 +581,7 @@ export const en = {
     light: 'Light',
     dark: 'Dark',
     signOut: 'Sign out',
+    addPhone: 'Add a phone number',
   },
 
   notFound: {
@@ -612,6 +639,19 @@ export const en = {
       INVALID_OTP: 'That code is not correct. Please check the code we sent you.',
       OTP_EXPIRED: 'That code has expired. Please send yourself a new one.',
       SESSION_REQUIRED: 'Email verified. Please sign in with your password to continue.',
+      // Phone-OTP registration (P8.T6) — stable /v1 codes; screens may render
+      // richer parameterized copy, these are the honest fallbacks.
+      OTP_INVALID: 'That code is not correct. Please check the code we sent you.',
+      OTP_ALREADY_USED: 'That code has already been used. Please request a new one.',
+      OTP_LOCKED: 'Too many incorrect codes. This number is locked for 15 minutes.',
+      OTP_SEND_THROTTLED:
+        'Too many codes have been sent. Please wait a few minutes before trying again.',
+      OTP_RESEND_COOLDOWN: 'Please wait a minute before requesting another code.',
+      OTP_DELIVERY_UNAVAILABLE:
+        'We couldn’t send a code — message delivery isn’t available right now.',
+      PHONE_ALREADY_VERIFIED:
+        'This number is already verified on another account. Try signing in instead.',
+      PHONE_FLOW_EXPIRED: 'This sign-up session ended for your security. Please start again.',
     },
   },
 } as const;

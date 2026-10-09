@@ -82,6 +82,34 @@ export const fr: Translations = {
     reenterPassword: ['Confirmez le mot de passe'].join(''),
   },
 
+  // Inscription par numéro de téléphone (P8.T6) — entrée signup depuis le
+  // formulaire d'inscription, entrée attach depuis l'onglet Profil. Le backend
+  // envoie le code par SMS d'abord, sinon par e-mail, et ne renvoie `devCode`
+  // qu'en mode bac à sable / développement (jamais en prod/staging).
+  phoneAuth: {
+    entryPrompt: 'Plutôt utiliser votre téléphone ?',
+    entryAction: 'Continuer avec le numéro de téléphone',
+    titleSignup: "S'inscrire avec votre téléphone",
+    subtitleSignup:
+      'Nous vous envoyons un code à 6 chiffres pour vérifier votre numéro, puis nous créons votre compte.',
+    titleAttach: 'Ajouter un numéro de téléphone',
+    subtitleAttach:
+      'Nous envoyons un code à 6 chiffres pour confirmer que ce numéro vous appartient.',
+    phoneInvalid: 'Saisissez un numéro camerounais valide, p. ex. 670123456 ou +237670123456.',
+    emailHint:
+      'Si les SMS n’aboutissent pas pour ce numéro, le code est envoyé à cette adresse e-mail.',
+    codeSentTo: 'Saisissez le code à 6 chiffres envoyé au {{target}}',
+    sentByEmail:
+      'Les SMS ne sont pas disponibles pour ce numéro pour le moment : nous avons envoyé le code à {{target}}.',
+    devCode: 'Bac à sable : votre code est {{code}}',
+    locked:
+      'Trop de codes incorrects. Ce numéro est verrouillé pendant {{minutes}} minutes — veuillez réessayer plus tard.',
+    emailFallbackPrompt: 'Impossible de recevoir des SMS pour le moment ?',
+    emailFallbackAction: "S'inscrire avec e-mail plutôt",
+    signInNotice: 'Votre compte est prêt. Connectez-vous avec votre e-mail et votre mot de passe.',
+    attachSuccess: 'Votre numéro de téléphone a été vérifié.',
+  },
+
   otp: {
     title: 'Confirmation OTP',
     subtitleRegister:
@@ -558,6 +586,7 @@ export const fr: Translations = {
     light: 'Clair',
     dark: 'Sombre',
     signOut: 'Se déconnecter',
+    addPhone: 'Ajouter un numéro de téléphone',
   },
 
   notFound: {
@@ -612,6 +641,20 @@ export const fr: Translations = {
       OTP_EXPIRED: 'Ce code a expiré. Veuillez en demander un nouveau.',
       SESSION_REQUIRED:
         'E-mail vérifié. Veuillez vous connecter avec votre mot de passe pour continuer.',
+      // Inscription par téléphone (P8.T6) — codes /v1 stables ; les écrans
+      // peuvent afficher un message plus détaillé, ceux-ci restent honnêtes.
+      OTP_INVALID: "Ce code n'est pas correct. Vérifiez le code que nous vous avons envoyé.",
+      OTP_ALREADY_USED: 'Ce code a déjà été utilisé. Veuillez en demander un nouveau.',
+      OTP_LOCKED: 'Trop de codes incorrects. Ce numéro est verrouillé pendant 15 minutes.',
+      OTP_SEND_THROTTLED:
+        'Trop de codes ont été envoyés. Veuillez patienter quelques minutes avant de réessayer.',
+      OTP_RESEND_COOLDOWN: 'Veuillez attendre une minute avant de demander un autre code.',
+      OTP_DELIVERY_UNAVAILABLE:
+        "Nous n'avons pas pu envoyer de code — l'envoi de messages n'est pas disponible pour le moment.",
+      PHONE_ALREADY_VERIFIED:
+        'Ce numéro est déjà vérifié sur un autre compte. Essayez de vous connecter.',
+      PHONE_FLOW_EXPIRED:
+        'Cette session d’inscription a expiré pour votre sécurité. Veuillez recommencer.',
     },
   },
 };
