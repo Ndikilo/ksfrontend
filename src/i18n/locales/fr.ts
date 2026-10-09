@@ -173,11 +173,15 @@ export const fr: Translations = {
   placeholders: {
     comingSoon: 'Bientôt disponible',
     chatsTitle: 'Messages',
+    // État vide mené par son message (Review 014 MINOR-7) : le titre de
+    // l'écran reste dans l'en-tête — l'état vide a sa propre ligne.
+    chatsEmptyTitle: 'La messagerie ouvre bientôt',
     chatsMessage:
-      'La messagerie sécurisée avec votre praticien arrive bientôt. Nous vous préviendrons dès son ouverture.',
+      'Vos échanges avec les praticiens que vous consultez seront réunis ici. Nous vous préviendrons dès son ouverture.',
     healthRecordTitle: 'Dossier médical',
+    healthRecordEmptyTitle: 'Vos documents arrivent bientôt',
     healthRecordMessage:
-      'Vos ordonnances, documents et historiques de consultation seront réunis ici — bientôt disponible.',
+      'Ordonnances, documents et historique de visites seront réunis ici dès son ouverture.',
   },
 
   appointments: {
@@ -357,10 +361,16 @@ export const fr: Translations = {
       dentists: 'Dentistes',
     },
     nearby: {
-      // En-tête honnête : sans base de localisation, la liste n'est PAS
-      // « près de chez vous » — c'est le répertoire le mieux noté.
+      // En-tête honnête : la mention « près de chez vous » ne s'affiche QUE
+      // lorsque le tri par distance est réellement actif (position accordée) ;
+      // sans base de localisation, la liste est le répertoire le mieux noté ;
+      // avec une ville, elle le dit.
+      titleNear: 'Médecins près de chez vous',
       titleRated: 'Médecins les mieux notés',
       titleCity: 'Médecins à {{city}}',
+      // Demande d'autorisation contextuelle (P8.T3) : un appui volontaire à
+      // côté de « Tout voir » — jamais au lancement à froid.
+      nearMe: 'Près de moi',
       seeAll: 'Tout voir',
       emptyTitle: 'Aucun praticien pour le moment',
       emptyMessage:

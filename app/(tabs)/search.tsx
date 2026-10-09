@@ -2,13 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { consultationTypeParam, referenceService, searchService, isApiError } from '@/api';
 import { PractitionerCardView, professionLabelOf } from '@/components/practitioners';
-import { Button, Input, Screen, Select, Spinner, Text } from '@/components/ui';
+import { Button, Chip, Input, Screen, Select, Spinner, Text } from '@/components/ui';
 import { EmptyState } from '@/components/feedback';
-import { CONSULTATION_TYPE_KEYS, professionIcon } from '@/constants';
+import { CONSULTATION_TYPE_KEYS } from '@/constants';
 import { useAsync, useDebounce } from '@/hooks';
 import { useTheme } from '@/theme';
 import type {
@@ -208,11 +208,18 @@ export default function SearchScreen() {
 
       {/* Profession filter — single-select (the API takes one professionId).
           A specialty pre-filter (home category chip) leads the row as a
-          removable selected chip so the active filter is always visible. */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
+          removable selected chip so the active filter is always visible.
+          Every chip is the kit primitive (Review 014 MAJOR-2): selected state
+          exposed to screen readers, 48dp target, pressed feedback. */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipRow}
+        contentContainerStyle={styles.chipRowContent}
+      >
         {specialty !== null && category !== null ? (
           <Chip
-            label={`${professionIcon(t(`home.categories.${category}`))} ${t(`home.categories.${category}`)}`}
+            label={t(`home.categories.${category}`)}
             selected
             onPress={() => setSpecialty(null)}
           />
@@ -228,7 +235,7 @@ export default function SearchScreen() {
         {(professions.data?.data ?? []).map((profession) => (
           <Chip
             key={profession.id}
-            label={`${professionIcon(profession.nameEn, profession.nameFr)} ${professionLabel(profession)}`}
+            label={professionLabel(profession)}
             selected={professionId === profession.id}
             onPress={() =>
               setProfessionId((prev) => (prev === profession.id ? null : profession.id))
@@ -316,45 +323,10 @@ export default function SearchScreen() {
   );
 }
 
-function Chip({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        styles.chip,
-        {
-          backgroundColor: selected ? theme.colors.primary : theme.colors.surface,
-          borderColor: selected ? theme.colors.primary : theme.colors.border,
-        },
-      ]}
-    >
-      <Text variant="label" style={{ color: selected ? theme.colors.onPrimary : theme.colors.text }}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   header: { gap: 4 },
   chipRow: { flexGrow: 0 },
+  chipRowContent: { gap: 8, paddingRight: 8 },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   filterSection: { gap: 8 },
-  chip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    marginRight: 8,
-    alignSelf: 'flex-start',
-  },
 });

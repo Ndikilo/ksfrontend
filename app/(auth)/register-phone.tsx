@@ -125,6 +125,7 @@ export default function RegisterPhoneScreen() {
           required
           placeholder="(+237) 670123456"
           keyboardType="phone-pad"
+          autoComplete="tel"
           value={phone}
           onChangeText={setPhone}
           error={errors.phone}
@@ -138,6 +139,7 @@ export default function RegisterPhoneScreen() {
                 label={t('register.surname')}
                 required
                 placeholder="John"
+                autoComplete="family-name"
                 value={surname}
                 onChangeText={setSurname}
                 error={errors.surname}
@@ -148,6 +150,7 @@ export default function RegisterPhoneScreen() {
                 label={t('register.givenNames')}
                 required
                 placeholder="doe"
+                autoComplete="given-name"
                 value={givenNames}
                 onChangeText={setGivenNames}
                 error={errors.givenNames}
@@ -173,6 +176,7 @@ export default function RegisterPhoneScreen() {
               required
               placeholder="••••••••••••"
               secureTextEntry
+              autoComplete="new-password"
               value={password}
               onChangeText={setPassword}
               error={errors.password}
@@ -183,6 +187,7 @@ export default function RegisterPhoneScreen() {
               required
               placeholder="••••••••••••"
               secureTextEntry
+              autoComplete="new-password"
               value={confirm}
               onChangeText={setConfirm}
               error={confirmMismatch ? t('validation.passwordMismatch') : null}

@@ -4,11 +4,11 @@ import { StyleSheet, View } from 'react-native';
 
 import { searchService } from '@/api';
 import { Avatar, BackButton, Badge, Button, Card, Divider, Screen, Spinner, Text } from '@/components/ui';
-import { CONSULTATION_TYPE_KEYS, professionIcon } from '@/constants';
+import { CONSULTATION_TYPE_KEYS } from '@/constants';
 import { useAsync } from '@/hooks';
 import { useTheme } from '@/theme';
 import type { ConsultationType } from '@/types';
-import { formatDate } from '@/utils';
+import { formatClinicDate, formatDate } from '@/utils';
 
 /**
  * Public profile of a verified practitioner. "Book appointment" opens the
@@ -69,14 +69,14 @@ export default function PractitionerDetailScreen() {
         <View style={styles.identityInfo}>
           <Text variant="title">{fullName}</Text>
           <Text variant="body" color="textMuted">
-            {professionIcon(professionLabel, data.specialty)} {professionLabel}
+            {professionLabel}
             {data.specialty ? ` • ${data.specialty}` : ''}
           </Text>
           <View style={styles.badgeRow}>
             {data.verification.status === 'verified' ? (
               <Badge label={`✓ ${t('practitioner.verified')}`} tone="success" />
             ) : null}
-            <Badge label={`⭐ ${data.rating.average.toFixed(1)} (${data.rating.count})`} tone="primary" />
+            <Badge label={`${data.rating.average.toFixed(1)} (${data.rating.count})`} tone="primary" />
           </View>
         </View>
       </View>
@@ -93,7 +93,9 @@ export default function PractitionerDetailScreen() {
           {data.nextAvailableAt ? (
             <FactLine
               label={t('practitioner.nextAvailable', {
-                when: formatDate(
+                // Clinic-local (standard §5): the teaser instant a patient
+                // plans around is rendered in Africa/Douala, not device time.
+                when: formatClinicDate(
                   data.nextAvailableAt,
                   { dateStyle: 'short', timeStyle: 'short' },
                   i18n.language,
@@ -134,7 +136,7 @@ export default function PractitionerDetailScreen() {
                 <Text variant="body">{consultationLabel(offering.consultationType)}</Text>
                 <Text variant="body" color="textMuted">
                   {t('practitioner.minutes', { count: offering.durationMin })} •{' '}
-                  {offering.priceXaf.toLocaleString()} XAF
+                  {offering.priceXaf.toLocaleString(i18n.language)} XAF
                 </Text>
               </View>
             </View>
@@ -179,9 +181,7 @@ export default function PractitionerDetailScreen() {
             .sort((a, b) => a.sortOrder - b.sortOrder)
             .map((qualification, index) => (
               <View key={qualification.id} style={index > 0 ? styles.listRow : undefined}>
-                <Text variant="body">
-                  {professionIcon(qualification.title)} {qualification.title}
-                </Text>
+                <Text variant="body">{qualification.title}</Text>
                 <Text variant="caption" color="textMuted">
                   {[qualification.institution, qualification.country, qualification.year]
                     .filter(Boolean)

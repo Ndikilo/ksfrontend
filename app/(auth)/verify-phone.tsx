@@ -68,10 +68,18 @@ export default function VerifyPhoneScreen() {
     }
     if (result.nextStep === 'verify-email') {
       // SMS/dev delivery leaves the signup email unverified: hand over to the
-      // existing email-verification flow, seeded so it signs straight in.
+      // existing email-verification flow, seeded so it signs straight in — and
+      // with the profile fields the phone form collected, so the post-verify
+      // sign-in consumes them at the SAME seam the email flow does
+      // (completePatientProfile — Review 014 MINOR-6).
       await seedPendingRegistration({
         email: params.email ?? '',
         password: getPendingPhonePassword(params.phone),
+        profile: {
+          surname: params.surname ?? '',
+          givenNames: params.givenNames ?? '',
+          phone: params.phone,
+        },
       });
       phoneService.clearPending();
       router.push({

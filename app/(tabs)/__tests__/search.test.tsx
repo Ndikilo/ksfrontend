@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 
 import '@/i18n';
@@ -113,8 +113,11 @@ describe('SearchScreen home-category pre-filters (P8.T2)', () => {
         expect.objectContaining({ specialty: 'Cardiolog' }),
       ),
     );
-    // The pre-filter is never invisible: it renders as a selected chip.
+    // The pre-filter is never invisible: it renders as a SELECTED kit chip.
     expect(screen.getByText(/Cardiologist/)).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Cardiologist' }).props.accessibilityState,
+    ).toMatchObject({ selected: true });
   });
 
   it('a specialty category (dentists) maps to the dentistry stem', async () => {
@@ -168,5 +171,61 @@ describe('SearchScreen home-category pre-filters (P8.T2)', () => {
       expect.not.objectContaining({ specialty: expect.anything(), professionId: expect.anything() }),
     );
     expect(screen.queryByText(/Cardiologist/)).toBeNull();
+  });
+});
+
+describe('SearchScreen chips are the kit primitive (Review 014 MAJOR-2)', () => {
+  // Result-row cards are buttons whose persona a11y label CONTAINS the
+  // profession ("Ada Nkotto, Nurse"), so a role query by profession name
+  // matches both the card and the chip. The kit chip is the match exposing
+  // accessibilityState — that contract is the subject here.
+  const chipByLabel = (screen: ReturnType<typeof renderScreen>, name: string) =>
+    screen
+      .getAllByRole('button', { name })
+      .find((element) => element.props.accessibilityState?.selected !== undefined);
+
+  it('profession chips expose their single-select state via accessibilityState', async () => {
+    mockParams = { category: 'nurses' };
+    const screen = renderScreen();
+
+    // Once the catalog lands, the nurse profession resolves and its chip
+    // renders selected through the kit's accessibilityState contract — the
+    // same announcement every other Chip in the app makes.
+    await waitFor(() => {
+      expect(chipByLabel(screen, 'Nurse')?.props.accessibilityState).toMatchObject({
+        selected: true,
+      });
+    });
+    // "All" is the inverse selection in the same row.
+    expect(chipByLabel(screen, 'All')?.props.accessibilityState).toMatchObject({
+      selected: false,
+    });
+  });
+
+  it('consultation chips are kit buttons with plain labels (no emoji decoration)', async () => {
+    const screen = renderScreen();
+    const chip = await screen.findByRole('button', { name: 'Home visit' });
+    expect(chip.props.accessibilityState).toMatchObject({ selected: false });
+    expect(screen.queryByText(/💉|🩺/)).toBeNull();
+  });
+
+  it('tapping a profession chip announces the selection flip', async () => {
+    const screen = renderScreen();
+    await screen.findByText('Home visit');
+
+    fireEvent.press(chipByLabel(screen, 'Nurse')!);
+    await waitFor(() => {
+      expect(chipByLabel(screen, 'Nurse')?.props.accessibilityState).toMatchObject({
+        selected: true,
+      });
+    });
+
+    // Tapping again clears the single-select (toggle-off).
+    fireEvent.press(chipByLabel(screen, 'Nurse')!);
+    await waitFor(() => {
+      expect(chipByLabel(screen, 'Nurse')?.props.accessibilityState).toMatchObject({
+        selected: false,
+      });
+    });
   });
 });

@@ -27,20 +27,35 @@ const renderScreen = (Screen: ComponentType) =>
  * P8.T4: Chats + Health Record are MVP placeholders — present in the bottom
  * nav, clearly announced as "coming soon", and deliberately NON-functional:
  * no button, no link, nothing that could pretend to work.
+ *
+ * Review 014 MINOR-7: the screen title lives ONLY in the header — the
+ * EmptyState below is message-led with its own distinct line, so the title
+ * never renders twice on one screen.
  */
 describe.each([
-  { title: 'Chats', Screen: ChatsScreen, messagePart: /messaging with your practitioner/ },
-  { title: 'Health Record', Screen: HealthRecordScreen, messagePart: /prescriptions, documents/ },
-])('$title placeholder (P8.T4)', ({ title, Screen, messagePart }) => {
-  it(`renders the ${title} title with an explicit "Coming soon" badge`, () => {
+  {
+    title: 'Chats',
+    Screen: ChatsScreen,
+    emptyTitle: 'Messaging opens soon',
+    messagePart: /Conversations with the practitioners/,
+  },
+  {
+    title: 'Health Record',
+    Screen: HealthRecordScreen,
+    emptyTitle: 'Your records are on their way',
+    messagePart: /Prescriptions, documents and visit history/,
+  },
+])('$title placeholder (P8.T4)', ({ title, Screen, emptyTitle, messagePart }) => {
+  it(`renders the ${title} title exactly once, with an explicit "Coming soon" badge`, () => {
     const screen = renderScreen(Screen);
-    // The title leads both the header and the empty state.
-    expect(screen.getAllByText(title).length).toBeGreaterThan(0);
+    // The title is the header's alone — the empty state never repeats it.
+    expect(screen.getAllByText(title)).toHaveLength(1);
     expect(screen.getByText('Coming soon')).toBeTruthy();
   });
 
-  it('explains what will live here, and offers NO working affordance', () => {
+  it('the empty state is message-led with a distinct line, and offers NO working affordance', () => {
     const screen = renderScreen(Screen);
+    expect(screen.getByText(emptyTitle)).toBeTruthy();
     expect(screen.getByText(messagePart)).toBeTruthy();
     // Non-functional by construction: not a single pressable element.
     expect(screen.queryByRole('button')).toBeNull();

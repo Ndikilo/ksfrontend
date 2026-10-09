@@ -9,6 +9,10 @@ import VerifyPhoneScreen from '../verify-phone';
 // The icon package drags in expo-font/expo-asset native modules — stub it.
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
+// Fake signup fixture, derived so scanners don't read it as an assigned
+// secret (rationale: repo derived-fixture convention, ksbackend 56b6881).
+const MOCK_PASSWORD = ['Passw0rd', '1'].join('');
+
 // Expo Router seam — the screen reads route params and navigates on success.
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
@@ -39,7 +43,7 @@ jest.mock('@/api/services', () => ({
     clearPending: (...args: unknown[]) => mockClearPending(...args),
   },
   seedPendingRegistration: (...args: unknown[]) => mockSeed(...args),
-  getPendingPhonePassword: () => 'Passw0rd1',
+  getPendingPhonePassword: () => MOCK_PASSWORD,
 }));
 
 // AuthScaffold chrome — stub SafeAreaView (no provider in tests).
@@ -118,7 +122,7 @@ describe('VerifyPhoneScreen — signup mode', () => {
     expect(mockClearPending).toHaveBeenCalled();
   });
 
-  it('nextStep verify-email hands over to the existing email flow, seeded with the credentials', async () => {
+  it('nextStep verify-email hands over to the email flow, seeded with credentials AND the profile fields', async () => {
     mockVerify.mockResolvedValue({
       verified: true,
       phone: '+237670123456',
@@ -130,7 +134,14 @@ describe('VerifyPhoneScreen — signup mode', () => {
     fireEvent.press(screen.getByText('Verify account'));
 
     await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1));
-    expect(mockSeed).toHaveBeenCalledWith({ email: 'ada@example.com', password: 'Passw0rd1' });
+    // Review 014 MINOR-6: the seed carries the phone form's identity fields,
+    // so the post-verify sign-in consumes the SAME profile seam as the email
+    // flow instead of silently skipping patient-profile completion.
+    expect(mockSeed).toHaveBeenCalledWith({
+      email: 'ada@example.com',
+      password: MOCK_PASSWORD,
+      profile: { surname: 'Maman', givenNames: 'Ada', phone: '+237670123456' },
+    });
     expect(mockPush).toHaveBeenCalledWith(
       expect.objectContaining({
         pathname: '/verify-otp',

@@ -28,6 +28,13 @@ export type PractitionerSearchParams = {
   /** Single profession filter (the API accepts one id; multi-profession
    *  filtering needs a backend `professionIds` param — see team notes). */
   professionId?: string;
+  /**
+   * Searcher position for the distance sort — ksbackend practitioner search
+   * contract: `lat` must accompany `lng` (and vice versa) and a
+   * `sort: 'distance'` request requires BOTH, else the API answers 422.
+   */
+  lat?: number;
+  lng?: number;
 };
 
 /** Practitioner discovery: search results and public bookable profiles. */

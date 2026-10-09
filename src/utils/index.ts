@@ -6,4 +6,5 @@ export * from './format';
 export * from './slots';
 export * from './appointments';
 export * from './greeting';
+export * from './location';
 export * from './nearby';

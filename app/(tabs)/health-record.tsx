@@ -23,11 +23,14 @@ export default function HealthRecordScreen() {
         <Text variant="title">{t('placeholders.healthRecordTitle')}</Text>
         <Badge label={t('placeholders.comingSoon')} tone="info" />
       </View>
+      {/* Message-led composition (Review 014 MINOR-7): the screen title lives
+          in the header above — the empty state leads with its own line, so
+          the title is never read twice on one screen. */}
       <EmptyState
         icon={
           <Ionicons name="document-text-outline" size={48} color={theme.colors.textMuted} />
         }
-        title={t('placeholders.healthRecordTitle')}
+        title={t('placeholders.healthRecordEmptyTitle')}
         message={t('placeholders.healthRecordMessage')}
       />
     </Screen>

@@ -195,3 +195,17 @@ tracked in the user-action registry before store submission.
   shorter labels; `numberOfLines={1}` is for secondary chips only. Growing a
   pill's line count is safe: its touch target is a `minHeight`, so the
   container auto-heightens instead of clipping.
+
+## 8. Recorded deferrals, extraction re-review, teaser timezone, shadow primitives (Review 014)
+
+- Recorded-deferral rule: an acceptance-named interaction path may not be
+  silently replaced by a weaker one; deferral requires a PLAN/PROGRESS scope
+  decision naming the shipped substitute.
+- Extraction re-review rule: moving code into a shared kit component
+  re-subjects it to the standard in full — inherited violations are fixed at
+  extraction, not promoted into kit furniture.
+- Teaser timezone rule: any rendered instant a patient can plan around
+  (availability teasers, discovery cards) is clinic-local, not only booking
+  flows.
+- Shadow-primitive rule: a screen-local component named after a kit primitive
+  is a §2 violation by definition; extend the kit instead.

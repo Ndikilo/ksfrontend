@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -10,17 +10,29 @@ import { Banner, EmptyState, ErrorState } from '@/components/feedback';
 import { Card, Chip, Link, Screen, Text } from '@/components/ui';
 import { useAsync } from '@/hooks';
 import { useAuth } from '@/store';
-import { useTheme } from '@/theme';
-import type { GreetingBucket } from '@/utils';
-import { firstNameOf, greetingBucketForDate, nearbyHasLocation, nearbyQuery } from '@/utils';
+import { radius, useTheme } from '@/theme';
+import {
+  firstNameOf,
+  getCurrentCoordsOnce,
+  getLocationPermission,
+  greetingBucketForDate,
+  nearbyHasLocation,
+  nearbyQuery,
+  requestLocationPermission,
+  type GreetingBucket,
+  type NearbyCoords,
+} from '@/utils';
 
 /**
  * Patient home (P8 — Homepage PRD). Composition top to bottom:
  *   1. time-of-day greeting with the session's first name (P8.T1);
  *   2. search entry (deep-links to Find Care);
  *   3. quick-category chips that pre-filter the search results (P8.T2);
- *   4. "Doctors near you" carousel — 6–8 cards, best-rated, with the
- *      documented graceful fallback (P8.T3, see `nearbyQuery`);
+ *   4. "Doctors near you" carousel (P8.T3): distance-sorted from a one-shot
+ *      coarse device fix when location is granted — permission asked ONLY via
+ *      the contextual "Near me" affordance, never at launch — with the
+ *      documented top-rated fallback whenever there is no location basis
+ *      (denied / unavailable / error — see `nearbyQuery`);
  *   5. three static health tips (P8.T5).
  * Every async surface has its loading / error / empty / stale-refetch state
  * from the feedback kit; the full-screen-free layout keeps stale content
@@ -28,9 +40,9 @@ import { firstNameOf, greetingBucketForDate, nearbyHasLocation, nearbyQuery } fr
  */
 
 // No city source exists yet — the auth user carries identity fields only and
-// the patient profile has no city — so the carousel runs the top-rated
-// fallback branch. When a city source lands, plug it in here and the header
-// + query switch to the city branch (see `nearbyQuery`).
+// the patient profile has no city — so the city branch of `nearbyQuery` stays
+// dormant behind this null (its header + query flip on the moment a city
+// source lands). Distance sorting is live through the device fix instead.
 const USER_CITY: string | null = null;
 
 /** PRD spec: the carousel shows 6–8 practitioner cards. */
@@ -61,6 +73,9 @@ const HEALTH_TIPS = [
   { key: 'soda', icon: 'water' },
 ] as const;
 
+/** Where the "near you" basis stands (drives the honest section header). */
+type NearbyBasis = 'checking' | 'distance' | 'fallback';
+
 export default function HomeScreen() {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
@@ -72,7 +87,74 @@ export default function HomeScreen() {
   // see `greeting.ts` for why a greeting is not clinic-local).
   const [bucket, setBucket] = useState(() => greetingBucketForDate(new Date()));
 
-  const nearby = useAsync(() => searchService.practitioners(nearbyQuery(USER_CITY)), []);
+  // --- P8.T3 location basis --------------------------------------------------
+  // Silent permission check + one-shot coarse fix, run ONCE per mount. The
+  // coords live in a ref (read at fetch time) so the first nearby fetch can
+  // await the check and run the RIGHT query — no double 3G request, and no
+  // fetch dependency flips mid-flight. The distance sort only ever re-fires
+  // from an explicit user action (the "Near me" ask), never from a re-focus.
+  const coordsRef = useRef<NearbyCoords | null>(null);
+  const [basis, setBasis] = useState<NearbyBasis>('checking');
+  // The ask affordance shows only while the OS has never been asked; a
+  // definitive denial or an unavailable provider hides it (a re-ask would
+  // resolve instantly without a prompt — a dead tap).
+  const [nearMeAvailable, setNearMeAvailable] = useState(false);
+  const [distanceVersion, setDistanceVersion] = useState(0);
+  // ONE contextual ask per mount — requestForegroundPermissionsAsync must
+  // never loop (re-focuses and double taps included).
+  const askedRef = useRef(false);
+
+  // Kicked once at mount: the silent check + one-shot fix resolve into the
+  // ref/state below — no effect, no re-run, no ask loop.
+  const locationOnce = useMemo(
+    () =>
+      (async () => {
+        const permission = await getLocationPermission();
+        if (permission !== 'granted') {
+          setNearMeAvailable(permission === 'undetermined');
+          setBasis('fallback');
+          return;
+        }
+        const coords = await getCurrentCoordsOnce();
+        coordsRef.current = coords;
+        setBasis(coords ? 'distance' : 'fallback');
+      })(),
+    [],
+  );
+
+  /** Contextual ask — bound ONLY to the "Near me" chip tap. */
+  const enableNearMe = useCallback(async () => {
+    if (askedRef.current) return;
+    askedRef.current = true;
+    const permission = await requestLocationPermission();
+    if (permission !== 'granted') {
+      // ONE state flip from the ask result: the affordance goes away and the
+      // honest top-rated header stays. No loop — the ask never re-fires.
+      setNearMeAvailable(false);
+      setBasis('fallback');
+      return;
+    }
+    const coords = await getCurrentCoordsOnce();
+    coordsRef.current = coords;
+    if (!coords) {
+      setNearMeAvailable(false);
+      setBasis('fallback');
+      return;
+    }
+    setNearMeAvailable(false);
+    setBasis('distance');
+    setDistanceVersion((prev) => prev + 1); // re-fetch sorted by distance
+  }, []);
+
+  const nearby = useAsync(
+    async () => {
+      await locationOnce; // first run waits for the silent check (resolved after)
+      return searchService.practitioners(nearbyQuery(coordsRef.current, USER_CITY));
+    },
+    // distanceVersion re-runs the query when the user enables the sort from
+    // the "Near me" affordance; locationOnce pins the mount-only check.
+    [locationOnce, distanceVersion],
+  );
   const { refetch: refetchNearby } = nearby;
   const hasFocused = useRef(false);
   useFocusEffect(
@@ -80,7 +162,8 @@ export default function HomeScreen() {
       setBucket(greetingBucketForDate(new Date()));
       // Refetch on RE-focus (bookings elsewhere change availability); the
       // mount effect already fired, and two identical GETs is a wasted 3G
-      // request. A failed refetch keeps the stale cards mounted below.
+      // request. A failed refetch keeps the stale cards mounted below. The
+      // permission ask is NEVER part of a focus pass.
       if (hasFocused.current) void refetchNearby();
       hasFocused.current = true;
     }, [refetchNearby]),
@@ -93,9 +176,15 @@ export default function HomeScreen() {
   );
 
   const nearbyItems = nearby.data ? nearby.data.data.slice(0, NEARBY_MAX) : [];
-  const nearbyTitle = nearbyHasLocation(USER_CITY)
-    ? t('home.nearby.titleCity', { city: USER_CITY })
-    : t('home.nearby.titleRated');
+  // The header claims exactly what the query does (standard honesty): "near
+  // you" only when distance sorting is actually in effect; the city header
+  // only when a city filter ran; otherwise the top-rated directory.
+  const nearbyTitle =
+    basis === 'distance'
+      ? t('home.nearby.titleNear')
+      : nearbyHasLocation(USER_CITY)
+        ? t('home.nearby.titleCity', { city: USER_CITY })
+        : t('home.nearby.titleRated');
 
   return (
     <Screen contentStyle={{ gap: theme.spacing.xl }}>
@@ -164,11 +253,18 @@ export default function HomeScreen() {
           <Text variant="subheading" accessibilityRole="header">
             {nearbyTitle}
           </Text>
-          <Link
-            label={t('home.nearby.seeAll')}
-            onPress={() => router.push('/search')}
-            variant="label"
-          />
+          <View style={styles.headerActions}>
+            {basis === 'fallback' && nearMeAvailable ? (
+              // Contextual permission ask (P8.T3): a deliberate tap, next to
+              // "See all" — never a cold-launch prompt.
+              <Chip label={t('home.nearby.nearMe')} onPress={() => void enableNearMe()} />
+            ) : null}
+            <Link
+              label={t('home.nearby.seeAll')}
+              onPress={() => router.push('/search')}
+              variant="label"
+            />
+          </View>
         </View>
 
         {nearby.error && nearby.data !== null ? (
@@ -306,14 +402,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   chipRow: { gap: 8, paddingRight: 24 },
   categoryChip: { alignSelf: 'flex-start', paddingHorizontal: 16 },
   carousel: { gap: 12, paddingHorizontal: 24 },
   carouselItem: { width: 280 },
   carouselBleed: { marginHorizontal: -24 },
   skeletonRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  // Circles use the pill radius (999) like the chips — never a one-off arc.
-  skeletonAvatar: { width: 52, height: 52, borderRadius: 999 },
+  // Circles read the radius.full token (pills and avatars — standard §1).
+  skeletonAvatar: { width: 52, height: 52, borderRadius: radius.full },
   skeletonLines: { flex: 1, gap: 8 },
   skeletonLine: { height: 12, borderRadius: 6 },
   skeletonLineShort: { height: 12, borderRadius: 6, width: '55%' },
@@ -322,7 +423,7 @@ const styles = StyleSheet.create({
   tipIcon: {
     width: 44,
     height: 44,
-    borderRadius: 999,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },

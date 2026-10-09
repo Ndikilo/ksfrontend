@@ -169,11 +169,15 @@ export const en = {
   placeholders: {
     comingSoon: 'Coming soon',
     chatsTitle: 'Chats',
+    // Message-led empty state (Review 014 MINOR-7): the screen title stays in
+    // the header — the empty state carries its own distinct line + explanation.
+    chatsEmptyTitle: 'Messaging opens soon',
     chatsMessage:
-      'Secure messaging with your practitioner is coming soon. We will let you know as soon as it opens.',
+      'Conversations with the practitioners you book will live here. We will let you know as soon as it opens.',
     healthRecordTitle: 'Health Record',
+    healthRecordEmptyTitle: 'Your records are on their way',
     healthRecordMessage:
-      'Your prescriptions, documents and visit history will be gathered here — coming soon.',
+      'Prescriptions, documents and visit history will be gathered here once it opens.',
   },
 
   appointments: {
@@ -353,10 +357,16 @@ export const en = {
       dentists: 'Dentists',
     },
     nearby: {
-      // Honest header: without a location basis the list is NOT "near you" —
-      // it is the top-rated directory. With a city it says so.
+      // Honest header: the "near you" claim renders ONLY when distance
+      // sorting is actually in effect (device fix granted); without a
+      // location basis the list is the top-rated directory; with a city it
+      // says so.
+      titleNear: 'Doctors near you',
       titleRated: 'Top-rated doctors',
       titleCity: 'Doctors in {{city}}',
+      // Contextual permission ask (P8.T3): a deliberate tap next to "See
+      // all" — never a cold-launch prompt.
+      nearMe: 'Near me',
       seeAll: 'See all',
       emptyTitle: 'No practitioners yet',
       emptyMessage: 'Verified practitioners will appear here as they join KanaSanté.',

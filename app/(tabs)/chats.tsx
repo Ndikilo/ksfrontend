@@ -23,11 +23,14 @@ export default function ChatsScreen() {
         <Text variant="title">{t('placeholders.chatsTitle')}</Text>
         <Badge label={t('placeholders.comingSoon')} tone="info" />
       </View>
+      {/* Message-led composition (Review 014 MINOR-7): the screen title lives
+          in the header above — the empty state leads with its own line, so
+          the title is never read twice on one screen. */}
       <EmptyState
         icon={
           <Ionicons name="chatbubbles-outline" size={48} color={theme.colors.textMuted} />
         }
-        title={t('placeholders.chatsTitle')}
+        title={t('placeholders.chatsEmptyTitle')}
         message={t('placeholders.chatsMessage')}
       />
     </Screen>

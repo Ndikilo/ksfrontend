@@ -111,7 +111,12 @@ const challenge = (identifier: string): OtpChallenge => ({
  * `AppConfig.pendingPasswordTtlMs` has passed since `createdAt` (enforced on
  * every use and again on cold start; see `expirePendingPassword`).
  */
-type PendingAuth = { email: string; password?: string; profile?: RegisterPayload; createdAt?: number };
+type PendingAuth = {
+  email: string;
+  password?: string;
+  profile?: Partial<RegisterPayload>;
+  createdAt?: number;
+};
 
 let pendingAuth: PendingAuth | null = null;
 
@@ -165,12 +170,25 @@ async function savePending(next: PendingAuth | null): Promise<void> {
  * `nextStep: 'verify-email'`, the standard email-verification flow runs — and
  * with the credentials seeded here it signs straight in after the emailed code
  * instead of falling back to SESSION_REQUIRED (manual sign-in).
+ *
+ * `profile` carries whatever identity the phone form collected (surname,
+ * given names, phone). It is consumed at the SAME seam the email flow
+ * consumes its seed (completePatientProfile after the post-verify sign-in),
+ * so the phone path does not silently skip patient-profile completion
+ * (Review 014 MINOR-6). The user's locale is registered server-side by the
+ * phone start call (phone.service realStart posts `locale`), so it needs no
+ * separate seed.
  */
 export async function seedPendingRegistration(args: {
   email: string;
   password?: string;
+  profile?: Partial<RegisterPayload>;
 }): Promise<void> {
-  await savePending({ email: args.email.trim(), password: args.password });
+  await savePending({
+    email: args.email.trim(),
+    password: args.password,
+    profile: args.profile,
+  });
 }
 
 // --- Real backend calls -------------------------------------------------------
@@ -223,9 +241,27 @@ async function realVerifyRegistration(args: {
  * Create the patient profile from the data collected at registration.
  * Best-effort: the account is already usable; a failure here is logged and can
  * be repaired later from the profile screen (POST is idempotent).
+ *
+ * The backend's CompletePatientProfileBody REQUIRES surname, givenNames,
+ * dateOfBirth and sex (zod rejects the rest). The email flow always collects
+ * all of them; the phone flow's seed (see seedPendingRegistration) carries
+ * names + phone only, so when the required fields are missing the POST is
+ * DEFERRED with a logged reason rather than sent to a guaranteed 422 — the
+ * profile is then completed from the Profile screen (date of birth + sex are
+ * collected there).
  */
-async function completePatientProfile(token: string, profile?: RegisterPayload): Promise<void> {
+async function completePatientProfile(
+  token: string,
+  profile?: Partial<RegisterPayload>,
+): Promise<void> {
   if (!profile) return;
+  if (!profile.surname || !profile.givenNames || !profile.dateOfBirth || !profile.sex) {
+    logger.warn(
+      'auth',
+      'Patient profile seed is incomplete (date of birth and sex are required); completion deferred to the profile screen',
+    );
+    return;
+  }
   try {
     setAuthToken(token);
     await http.post(endpoints.me.patientProfile, {

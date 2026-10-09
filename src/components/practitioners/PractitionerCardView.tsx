@@ -5,10 +5,9 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Avatar } from '@/components/ui/Avatar';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
-import { professionIcon } from '@/constants';
 import { useTheme } from '@/theme';
 import type { Profession, PractitionerCard as PractitionerCardType } from '@/types';
-import { formatDate } from '@/utils';
+import { formatClinicDate } from '@/utils';
 
 export type PractitionerCardViewProps = {
   item: PractitionerCardType;
@@ -23,6 +22,12 @@ export type PractitionerCardViewProps = {
  * renderers share ONE card: name, profession/specialty, rating + review
  * count, fee, location, next availability; tapping opens the practitioner
  * detail page.
+ *
+ * Standard rules pinned here: the availability teaser renders in the CLINIC
+ * timezone via `formatClinicDate` (standard §5 teaser-timezone rule — a
+ * patient plans around it from any device timezone); the fee formats through
+ * the in-app language (standard §7 format locale); icons are Ionicons, never
+ * emoji (screen readers announce emoji as noise — Review 014 MINOR-5).
  */
 export function PractitionerCardView({
   item,
@@ -52,23 +57,31 @@ export function PractitionerCardView({
               {fullName}
             </Text>
             <Text variant="caption" color="textMuted" numberOfLines={1}>
-              {professionIcon(professionLabel, item.specialty)} {professionLabel}
+              {professionLabel}
               {item.specialty ? ` • ${item.specialty}` : ''}
             </Text>
-            <Text variant="caption" color="textMuted" numberOfLines={1}>
-              ⭐ {item.rating.average.toFixed(1)} ({item.rating.count})
-              {item.consultationFeeXaf != null
-                ? `  •  ${item.consultationFeeXaf.toLocaleString()} XAF`
-                : ''}
-            </Text>
-            {item.location ? (
+            <View style={styles.metaRow}>
+              {/* Decorative accents — the text carries the information, the
+                  glyphs stay out of the screen-reader announcement. */}
+              <Ionicons name="star" size={14} color={theme.colors.textMuted} />
               <Text variant="caption" color="textMuted" numberOfLines={1}>
-                📍 {item.location}
+                {item.rating.average.toFixed(1)} ({item.rating.count})
+                {item.consultationFeeXaf != null
+                  ? `  •  ${item.consultationFeeXaf.toLocaleString(i18n.language)} XAF`
+                  : ''}
               </Text>
+            </View>
+            {item.location ? (
+              <View style={styles.metaRow}>
+                <Ionicons name="location-outline" size={14} color={theme.colors.textMuted} />
+                <Text variant="caption" color="textMuted" numberOfLines={1}>
+                  {item.location}
+                </Text>
+              </View>
             ) : null}
             {item.nextAvailableAt ? (
               <Text variant="caption" style={{ color: theme.colors.success }} numberOfLines={1}>
-                {formatDate(
+                {formatClinicDate(
                   item.nextAvailableAt,
                   { dateStyle: 'medium', timeStyle: 'short' },
                   i18n.language,
@@ -94,4 +107,5 @@ const styles = StyleSheet.create({
   resultCard: { marginBottom: 2 },
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   resultInfo: { flex: 1, gap: 2 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 });
