@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useTranslation } from 'react-i18next';
 
-import { OfflineBanner } from '@/components/feedback';
+import { MockAuthBanner, OfflineBanner } from '@/components/feedback';
 import { useUpdateCheck } from '@/hooks';
 import { AppProviders } from '@/providers/AppProviders';
 import { useTheme } from '@/theme';
@@ -40,6 +40,7 @@ function RootNavigator() {
     <>
       <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
       <OfflineBanner />
+      <MockAuthBanner />
       <Stack
         screenOptions={{
           headerShown: false,

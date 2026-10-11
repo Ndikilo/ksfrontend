@@ -610,6 +610,10 @@ export const fr: Translations = {
     error: 'Pas de connexion Internet. Vérifiez votre réseau et réessayez.',
   },
 
+  demoMode: {
+    banner: ['MODE DÉMO — les codes ne sont pas vérifiés ; rien n’atteint un vrai serveur.'].join(''),
+  },
+
   input: {
     showPassword: ['Afficher le mot de passe'].join(''),
     hidePassword: ['Masquer le mot de passe'].join(''),

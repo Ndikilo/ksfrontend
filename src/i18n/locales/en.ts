@@ -605,6 +605,10 @@ export const en = {
     error: 'No internet connection. Check your network and try again.',
   },
 
+  demoMode: {
+    banner: ['DEMO MODE — codes are not validated; nothing here reaches a real backend.'].join(''),
+  },
+
   // Shared component copy (ui kit + feedback).
   input: {
     showPassword: ['Show password'].join(''),
