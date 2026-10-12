@@ -120,6 +120,58 @@ describe('Account deletion (ProfileView)', () => {
     expect(mockDeleteAccount).toHaveBeenCalledTimes(1);
   });
 
+  it('while deletion is in flight the control shows busy and cannot re-fire', async () => {
+    let resolveDelete: () => void = () => {};
+    mockDeleteAccount.mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveDelete = resolve;
+      }),
+    );
+    const screen = renderView();
+
+    pressDeleteAndAnswer(screen, 'Delete permanently');
+
+    // In flight: the label is replaced by the spinner (Button `loading`)…
+    await waitFor(() => expect(screen.queryByText('Delete my account')).toBeNull());
+    // …the dialog cannot be re-opened (button disabled + re-entrancy guard),
+    // and Sign out is locked for the duration.
+    fireEvent.press(screen.queryByText('Delete my account') ?? screen.UNSAFE_root);
+    expect(alertSpy).toHaveBeenCalledTimes(1);
+    expect(mockDeleteAccount).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveDelete();
+    });
+    // The failure banner never showed: the happy path cleared the state.
+    expect(screen.queryByText(/could not be deleted/)).toBeNull();
+  });
+
+  it('a re-entrant confirm press cannot start a second concurrent deletion', async () => {
+    let resolveDelete: () => void = () => {};
+    mockDeleteAccount.mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveDelete = resolve;
+      }),
+    );
+    const screen = renderView();
+
+    pressDeleteAndAnswer(screen, 'Delete permanently');
+    await waitFor(() => expect(mockDeleteAccount).toHaveBeenCalledTimes(1));
+
+    // The dialog is already open on a real device when a double-press lands:
+    // fire the confirm again from the SAME dialog instance.
+    const buttons = (alertSpy.mock.calls[0]?.[2] ?? []) as AlertButton[];
+    const destructive = buttons.find((button) => button.text?.startsWith('Delete permanently'));
+    await act(async () => {
+      destructive?.onPress?.();
+    });
+    expect(mockDeleteAccount).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveDelete();
+    });
+  });
+
   it('sign-out remains wired alongside the new action', () => {
     const screen = renderView();
 

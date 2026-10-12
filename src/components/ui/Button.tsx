@@ -12,7 +12,7 @@ import { useTheme, type Theme } from '@/theme';
 
 import { Text } from './Text';
 
-type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'ghost-danger';
 type Size = 'sm' | 'md' | 'lg';
 
 export type ButtonProps = Omit<PressableProps, 'style'> & {
@@ -101,6 +101,13 @@ function resolveVariant(theme: Theme, variant: Variant, size: Size) {
     },
     ghost: { container: { backgroundColor: 'transparent' }, textColor: colors.primary },
     danger: { container: { backgroundColor: colors.danger }, textColor: colors.onPrimary },
+    // Tertiary DESTRUCTIVE action (e.g. delete account): quiet like ghost but
+    // reads as danger, not as another brand-blue link. `dangerText` (not
+    // `danger`) — the only red token with AA contrast for text.
+    'ghost-danger': {
+      container: { backgroundColor: 'transparent' },
+      textColor: colors.dangerText,
+    },
   };
 
   const v = variants[variant];

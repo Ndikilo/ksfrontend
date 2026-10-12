@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, StyleSheet, View } from 'react-native';
 
@@ -6,6 +6,7 @@ import { Banner } from '@/components/feedback';
 import { Avatar, Button, Card, Divider, Text } from '@/components/ui';
 import { useAuth } from '@/store';
 import { useThemeContext } from '@/theme';
+import { logger } from '@/utils';
 
 /**
  * The profile body shared by the patient Profile tab and the practitioner
@@ -22,10 +23,15 @@ export function ProfileView() {
   const { t } = useTranslation();
   const { session, signOut, deleteAccount } = useAuth();
   const { theme, preference, setPreference } = useThemeContext();
+  const [deleting, setDeleting] = useState(false);
   const [deletionFailed, setDeletionFailed] = useState(false);
+  // Re-entrancy guard for the dialog's confirm press (Android has double-fired
+  // Alert onPress on fast taps; a second concurrent DELETE must never run).
+  const deleteInFlight = useRef(false);
   const user = session?.user;
 
   const confirmDeleteAccount = () => {
+    if (deleteInFlight.current) return;
     Alert.alert(
       t('profile.deleteAccountConfirmTitle'),
       t('profile.deleteAccountConfirmMessage'),
@@ -35,9 +41,19 @@ export function ProfileView() {
           text: t('profile.deleteAccountAction'),
           style: 'destructive',
           onPress: () => {
+            if (deleteInFlight.current) return;
+            deleteInFlight.current = true;
+            setDeleting(true);
+            setDeletionFailed(false);
             void deleteAccount()
-              .then(() => setDeletionFailed(false))
-              .catch(() => setDeletionFailed(true));
+              .catch((error: unknown) => {
+                logger.warn('auth', 'Account deletion failed; session kept for retry', error);
+                setDeletionFailed(true);
+              })
+              .finally(() => {
+                deleteInFlight.current = false;
+                setDeleting(false);
+              });
           },
         },
       ],
@@ -75,11 +91,18 @@ export function ProfileView() {
         </View>
       </Card>
 
-      <Button title={t('profile.signOut')} variant="danger" fullWidth onPress={() => void signOut()} />
+      <Button
+        title={t('profile.signOut')}
+        variant="danger"
+        fullWidth
+        disabled={deleting}
+        onPress={() => void signOut()}
+      />
       <Button
         title={t('profile.deleteAccount')}
-        variant="ghost"
+        variant="ghost-danger"
         fullWidth
+        loading={deleting}
         onPress={confirmDeleteAccount}
       />
       {deletionFailed ? (

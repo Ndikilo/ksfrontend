@@ -595,11 +595,11 @@ export const en = {
     deleteAccount: 'Delete my account',
     deleteAccountConfirmTitle: 'Delete your account?',
     deleteAccountConfirmMessage:
-      'This permanently erases your profile, your booking history, the people you manage, and — for practitioners — your practice profile and uploaded documents. This cannot be undone.',
+      'This permanently erases your profile, your booking history, the people you care for, and — for practitioners — your practice profile and uploaded documents. This cannot be undone.',
     deleteAccountAction: 'Delete permanently',
     cancel: 'Cancel',
     deleteAccountFailed:
-      'Your account could not be deleted. Check your connection and try again — you are still signed in.',
+      'Your account could not be deleted. Check your connection and try again.',
   },
 
   notFound: {
