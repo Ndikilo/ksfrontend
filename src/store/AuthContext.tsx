@@ -35,6 +35,10 @@ type AuthContextValue = {
   /** Adopt an already-obtained session (e.g. after registration OTP verify). */
   authenticate: (session: AuthSession) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Delete the account server-side, then clear the local session. Unlike
+   *  signOut this REJECTS when the server call fails (the account still
+   *  exists) so screens can surface the failure instead of faking success. */
+  deleteAccount: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -71,6 +75,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Even if the server call fails, clear the local session.
       logger.warn('auth', 'Logout request failed; clearing session locally', error);
     }
+    await applySession(null);
+  }, [applySession]);
+
+  const deleteAccount = useCallback(async () => {
+    // Deliberately NOT try/caught: if the deletion fails the account still
+    // exists and the session must survive for a retry — the caller surfaces
+    // the error. Only a confirmed server deletion clears the local session.
+    await authService.deleteAccount();
     await applySession(null);
   }, [applySession]);
 
@@ -112,8 +124,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [applySession]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, session, signIn, authenticate: applySession, signOut }),
-    [status, session, signIn, applySession, signOut],
+    () => ({ status, session, signIn, authenticate: applySession, signOut, deleteAccount }),
+    [status, session, signIn, applySession, signOut, deleteAccount],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

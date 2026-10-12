@@ -592,6 +592,14 @@ export const en = {
     dark: 'Dark',
     signOut: 'Sign out',
     addPhone: 'Add a phone number',
+    deleteAccount: 'Delete my account',
+    deleteAccountConfirmTitle: 'Delete your account?',
+    deleteAccountConfirmMessage:
+      'This permanently erases your profile, your booking history, the people you manage, and — for practitioners — your practice profile and uploaded documents. This cannot be undone.',
+    deleteAccountAction: 'Delete permanently',
+    cancel: 'Cancel',
+    deleteAccountFailed:
+      'Your account could not be deleted. Check your connection and try again — you are still signed in.',
   },
 
   notFound: {

@@ -597,6 +597,14 @@ export const fr: Translations = {
     dark: 'Sombre',
     signOut: 'Se déconnecter',
     addPhone: 'Ajouter un numéro de téléphone',
+    deleteAccount: 'Supprimer mon compte',
+    deleteAccountConfirmTitle: 'Supprimer votre compte ?',
+    deleteAccountConfirmMessage:
+      'Cette action efface définitivement votre profil, votre historique de rendez-vous, les personnes que vous gérez et — pour les praticiens — votre profil professionnel et les documents téléversés. Elle est irréversible.',
+    deleteAccountAction: 'Supprimer définitivement',
+    cancel: 'Annuler',
+    deleteAccountFailed:
+      'Votre compte n’a pas pu être supprimé. Vérifiez votre connexion et réessayez — vous restez connecté.',
   },
 
   notFound: {

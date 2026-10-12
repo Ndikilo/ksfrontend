@@ -347,6 +347,16 @@ async function realLogout(): Promise<void> {
   await http.post<{ success: boolean }>(endpoints.auth.signOut);
 }
 
+/** Permanent, server-side account deletion — destructive and immediate
+ *  (better-auth `deleteUser`, no email round-trip configured server-side).
+ *  Unlike logout this RESOLVES only when the server confirmed; a failed call
+ *  keeps the session intact so the user can retry (never fake a deleted
+ *  account). Local session cleanup stays with AuthContext, as for logout. */
+async function realDeleteAccount(): Promise<void> {
+  await http.delete<void>(endpoints.auth.deleteAccount);
+  await savePending(null);
+}
+
 /** Validate the stored bearer token; returns the fresh user or `null`. */
 async function realMe(): Promise<User | null> {
   const response = await http.get<BackendSessionResponse>(endpoints.auth.getSession);
@@ -363,6 +373,9 @@ export const authService = {
     env.mockAuth ? authMock.login(credentials) : realLogin(credentials),
 
   logout: () => (env.mockAuth ? authMock.logout() : realLogout()),
+
+  /** Permanently delete the signed-in account on the server. */
+  deleteAccount: () => (env.mockAuth ? authMock.deleteAccount() : realDeleteAccount()),
 
   /** Validate a stored session; resolves to the user, or `null` if invalid. */
   me: (): Promise<User | null> => (env.mockAuth ? authMock.me() : realMe()),

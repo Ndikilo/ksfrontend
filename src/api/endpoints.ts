@@ -12,6 +12,9 @@ export const endpoints = {
     signUpEmail: '/api/auth/sign-up/email',
     signInEmail: '/api/auth/sign-in/email',
     signOut: '/api/auth/sign-out',
+    /** DELETE — immediate, authenticated account deletion (better-auth
+     *  `deleteUser` plugin; no email round-trip is configured server-side). */
+    deleteAccount: '/api/auth/delete-user',
     /** Returns `{ session, user }` (or `null`) for the current bearer token. */
     getSession: '/api/auth/get-session',
     /** `{ email, type: 'sign-in' | 'email-verification' | 'forget-password' }`. */

@@ -75,6 +75,11 @@ export const authMock = {
     await delay(200);
   },
 
+  /** Mock parity with the real service: the demo account "is" deleted. */
+  async deleteAccount(): Promise<void> {
+    await delay(300);
+  },
+
   async me(): Promise<User | null> {
     await delay(150);
     return makeUser();
