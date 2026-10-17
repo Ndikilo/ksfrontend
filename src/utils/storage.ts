@@ -1,16 +1,23 @@
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 import { logger } from './logger';
 
 /**
- * Secure key/value storage backed by the device keychain/keystore.
- * Use this for anything sensitive (auth tokens, PII). It fails soft: a read
- * error resolves to `null` and a write error is logged rather than thrown, so
- * storage hiccups never crash a screen.
+ * Secure key/value storage. Native builds use the device keychain/keystore.
+ * Browsers have no keystore (expo-secure-store's web module is an empty
+ * stub), so on web the store degrades to localStorage — the same tradeoff
+ * the deployed web demo makes; native never touches it. It fails soft: a
+ * read error resolves to `null` and a write error is logged rather than
+ * thrown, so storage hiccups never crash a screen.
  */
+const webStorage: Storage | null =
+  Platform.OS === 'web' && typeof window !== 'undefined' ? window.localStorage : null;
+
 export const storage = {
   async get(key: string): Promise<string | null> {
     try {
+      if (webStorage) return webStorage.getItem(key);
       return await SecureStore.getItemAsync(key);
     } catch (error) {
       logger.error('storage', `Failed to read "${key}"`, error);
@@ -20,6 +27,10 @@ export const storage = {
 
   async set(key: string, value: string): Promise<void> {
     try {
+      if (webStorage) {
+        webStorage.setItem(key, value);
+        return;
+      }
       await SecureStore.setItemAsync(key, value);
     } catch (error) {
       logger.error('storage', `Failed to write "${key}"`, error);
@@ -28,6 +39,10 @@ export const storage = {
 
   async remove(key: string): Promise<void> {
     try {
+      if (webStorage) {
+        webStorage.removeItem(key);
+        return;
+      }
       await SecureStore.deleteItemAsync(key);
     } catch (error) {
       logger.error('storage', `Failed to delete "${key}"`, error);

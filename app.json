@@ -49,7 +49,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiBaseUrl": "https://ksbackend-api.onrender.com",
+      "apiBaseUrl": "https://16.28.39.251",
       "sentryDsn": ""
     }
   }
