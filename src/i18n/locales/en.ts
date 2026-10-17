@@ -11,12 +11,12 @@
 export const en = {
   common: {
     continue: 'Continue',
-    login: 'Login',
+    login: 'Sign in',
     createAccount: 'Create an account',
     createAccountShort: 'Create account',
     verifyAccount: 'Verify account',
     sendCode: 'Send code',
-    resetPassword: ['Reset Password'].join(''),
+    resetPassword: ['Reset password'].join(''),
     alreadyHaveAccount: 'Already have an account?',
     goBack: 'Go back',
     required: 'Required',
@@ -42,30 +42,28 @@ export const en = {
     slides: {
       findCare: {
         title: 'Find the right care',
-        subtitle:
-          'Discover verified doctors and nurses based on your health needs, all in one place',
+        subtitle: 'Discover verified doctors and nurses based on your health needs.',
       },
       book: {
         title: 'Book in minutes',
-        subtitle: 'Choose a practitioner, pick your time, and confirm your appointment instantly',
+        subtitle: 'Choose a practitioner, pick your time, and confirm your appointment.',
       },
       consult: {
         title: 'Consult your way',
-        subtitle:
-          'Join your consultation online or in-person, depending on what you choose and prefer',
+        subtitle: 'Join your consultation online or in person, whichever you prefer.',
       },
       records: {
         title: 'Access your records',
-        subtitle: 'View your prescriptions, notes, and past appointments anytime, securely',
+        subtitle: 'View your prescriptions, notes, and past appointments anytime, securely.',
       },
     },
-    practitionerPrompt: 'A healthcare practitioner?',
+    practitionerPrompt: 'Are you a practitioner? Create an account, then join from your profile.',
     signUp: 'Sign up',
   },
 
   register: {
     title: 'Create an account',
-    subtitle: 'Create your account in minutes using your phone and email',
+    subtitle: 'Create your account in minutes using your phone and email.',
     surname: 'Surname',
     givenNames: 'Given names',
     email: 'Email',
@@ -109,11 +107,11 @@ export const en = {
   otp: {
     title: 'OTP confirmation',
     subtitleRegister:
-      'Enter the 6-digit code sent to {{target}} to verify your account, the code expires in 5 minutes',
+      'Enter the 6-digit code sent to {{target}} to verify your account. The code expires in 5 minutes.',
     subtitleReset:
-      'Enter the 6-digit code sent to {{target}} to reset your password, the code expires in 5 minutes',
+      'Enter the 6-digit code sent to {{target}} to reset your password. The code expires in 5 minutes.',
     resendIn: 'Resend code in {{time}}',
-    notReceived: "Haven't received code?",
+    notReceived: "Didn't receive the code?",
     resend: 'Resend code',
     enterCode: 'Enter the {{length}}-digit code',
     a11yHint:
@@ -125,8 +123,8 @@ export const en = {
   },
 
   login: {
-    title: 'Login',
-    subtitle: 'Log in with your email and password to continue',
+    title: 'Sign in',
+    subtitle: 'Sign in with your email and password to continue.',
     identifier: 'Email address',
     password: ['Password'].join(''),
     rememberMe: 'Remember me',
@@ -138,13 +136,13 @@ export const en = {
   forgot: {
     title: 'Reset password',
     subtitle:
-      "Enter the email linked to your account. We'll send a code to reset your password",
+      "Enter the email linked to your account. We'll send a code to reset your password.",
     identifier: 'Email address',
   },
 
   reset: {
-    title: 'Reset Password',
-    subtitle: 'Enter your new password and re-enter it for confirmation below',
+    title: 'Reset password',
+    subtitle: 'Enter your new password and re-enter it for confirmation below.',
     password: ['Password'].join(''),
     reenterPassword: ['Re-enter password'].join(''),
   },
@@ -160,7 +158,7 @@ export const en = {
     home: 'Home',
     appointments: 'Appointments',
     chats: 'Chats',
-    healthRecord: 'Health Record',
+    healthRecord: 'Health record',
     account: 'Account',
   },
 
@@ -174,7 +172,7 @@ export const en = {
     chatsEmptyTitle: 'Messaging opens soon',
     chatsMessage:
       'Conversations with the practitioners you book will live here. We will let you know as soon as it opens.',
-    healthRecordTitle: 'Health Record',
+    healthRecordTitle: 'Health record',
     healthRecordEmptyTitle: 'Your records are on their way',
     healthRecordMessage:
       'Prescriptions, documents and visit history will be gathered here once it opens.',
@@ -258,8 +256,8 @@ export const en = {
   },
 
   search: {
-    title: 'Find Care',
-    subtitle: 'Book verified doctors and nurses near you',
+    title: 'Find care',
+    subtitle: 'Book verified doctors and nurses near you.',
     searchPlaceholder: 'Search by name or specialty…',
     allProfessions: 'All',
     consultation: 'Consultation type',
@@ -275,7 +273,10 @@ export const en = {
       name: 'Name A–Z',
       recency: 'Newest',
     },
-    resultsCount: '{{count}} practitioner(s) found',
+    // Plural variants in BOTH locales (same convention as otp.digitsEntered):
+    // a parenthetical "practitioner(s)" is programmer slop in user copy.
+    resultsCount_one: '{{count}} practitioner found',
+    resultsCount_other: '{{count}} practitioners found',
     loadMore: 'Load more',
     noResultsTitle: 'No practitioners found',
     noResultsMessage: 'Try adjusting your search or clearing a filter.',
@@ -292,6 +293,7 @@ export const en = {
     noBio: 'This practitioner has not added a bio yet.',
     consultationOptions: 'Consultation options',
     minutes: '{{count}} min',
+    feeFrom: 'From {{amount}} XAF',
     languages: 'Languages',
     locations: 'Practice locations',
     qualifications: 'Qualifications',

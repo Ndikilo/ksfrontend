@@ -229,3 +229,52 @@ describe('SearchScreen chips are the kit primitive (Review 014 MAJOR-2)', () => 
     });
   });
 });
+
+describe('SearchScreen error recovery (ui-quality gate)', () => {
+  it('a first-load failure offers Retry (re-issuing the request); Clear filters appears only with filters set', async () => {
+    mockSearch.mockRejectedValueOnce(new Error('offline'));
+    const screen = renderScreen();
+
+    // A non-API rejection resolves to the generic client message.
+    expect(await screen.findByText('Something went wrong. Please try again.')).toBeTruthy();
+    // No filters are active: "Clear filters" would be nonsense here — only Retry shows.
+    expect(screen.queryByText('Clear filters')).toBeNull();
+
+    const callsAfterFailure = mockSearch.mock.calls.length;
+    fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+    // The retry must pin a NEW call — toHaveBeenCalledWith alone passes vacuously.
+    await waitFor(() => expect(mockSearch).toHaveBeenCalledTimes(callsAfterFailure + 1));
+
+    // Recovery renders the row and clears the error branch.
+    expect(await screen.findByText(/Ada Nkotto/)).toBeTruthy();
+    expect(screen.queryByText('Something went wrong. Please try again.')).toBeNull();
+  });
+
+  it('a load-more failure keeps the loaded rows mounted and retries the same page', async () => {
+    mockSearch.mockResolvedValueOnce({
+      data: [HOME_VISIT_PRACTITIONER],
+      meta: {
+        count: 1,
+        page: 1,
+        pageSize: 10,
+        total: 25,
+        pageCount: 3,
+        hasNextPage: true,
+        hasPreviousPage: false,
+      },
+    });
+    mockSearch.mockRejectedValueOnce(new Error('offline'));
+    const screen = renderScreen();
+    await screen.findByText(/Ada Nkotto/);
+
+    fireEvent.press(screen.getByRole('button', { name: 'Load more' }));
+    // The error surfaces in the footer — the first page's rows stay on screen.
+    expect(await screen.findByText('Something went wrong. Please try again.')).toBeTruthy();
+    expect(screen.getByText(/Ada Nkotto/)).toBeTruthy();
+
+    const callsAfterFailure = mockSearch.mock.calls.length;
+    fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(mockSearch).toHaveBeenCalledTimes(callsAfterFailure + 1));
+    expect(mockSearch).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }));
+  });
+});

@@ -40,7 +40,7 @@ describe.each([
     messagePart: /Conversations with the practitioners/,
   },
   {
-    title: 'Health Record',
+    title: 'Health record',
     Screen: HealthRecordScreen,
     emptyTitle: 'Your records are on their way',
     messagePart: /Prescriptions, documents and visit history/,

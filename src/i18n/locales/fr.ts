@@ -42,32 +42,31 @@ export const fr: Translations = {
     slides: {
       findCare: {
         title: 'Trouvez les bons soins',
-        subtitle:
-          'Découvrez des médecins et infirmiers vérifiés selon vos besoins de santé, au même endroit',
+        subtitle: 'Découvrez des médecins et infirmiers vérifiés selon vos besoins de santé.',
       },
       book: {
         title: 'Réservez en quelques minutes',
         subtitle:
-          'Choisissez un praticien, sélectionnez votre horaire et confirmez votre rendez-vous instantanément',
+          'Choisissez un praticien, sélectionnez votre horaire et confirmez votre rendez-vous.',
       },
       consult: {
         title: 'Consultez à votre façon',
-        subtitle:
-          'Participez à votre consultation en ligne ou en personne, selon votre choix et votre préférence',
+        subtitle: 'Participez à votre consultation en ligne ou en personne, comme vous préférez.',
       },
       records: {
         title: 'Accédez à vos dossiers',
         subtitle:
-          'Consultez vos ordonnances, notes et rendez-vous passés à tout moment, en toute sécurité',
+          'Consultez vos ordonnances, notes et rendez-vous passés à tout moment, en toute sécurité.',
       },
     },
-    practitionerPrompt: 'Un professionnel de santé ?',
+    practitionerPrompt:
+      'Vous êtes praticien ? Créez un compte, puis rejoignez-nous depuis votre profil.',
     signUp: "S'inscrire",
   },
 
   register: {
     title: 'Créer un compte',
-    subtitle: 'Créez votre compte en quelques minutes avec votre téléphone et votre e-mail',
+    subtitle: 'Créez votre compte en quelques minutes avec votre téléphone et votre e-mail.',
     surname: 'Nom',
     givenNames: 'Prénoms',
     email: 'E-mail',
@@ -113,9 +112,9 @@ export const fr: Translations = {
   otp: {
     title: 'Confirmation OTP',
     subtitleRegister:
-      'Saisissez le code à 6 chiffres envoyé au {{target}} pour vérifier votre compte, le code expire dans 5 minutes',
+      'Saisissez le code à 6 chiffres envoyé au {{target}} pour vérifier votre compte. Le code expire dans 5 minutes.',
     subtitleReset:
-      'Saisissez le code à 6 chiffres envoyé au {{target}} pour réinitialiser votre mot de passe, le code expire dans 5 minutes',
+      'Saisissez le code à 6 chiffres envoyé au {{target}} pour réinitialiser votre mot de passe. Le code expire dans 5 minutes.',
     resendIn: 'Renvoyer le code dans {{time}}',
     notReceived: "Vous n'avez pas reçu le code ?",
     resend: 'Renvoyer le code',
@@ -130,7 +129,7 @@ export const fr: Translations = {
 
   login: {
     title: 'Connexion',
-    subtitle: 'Connectez-vous avec votre e-mail et votre mot de passe pour continuer',
+    subtitle: 'Connectez-vous avec votre e-mail et votre mot de passe pour continuer.',
     identifier: 'Adresse e-mail',
     password: ['Mot de passe'].join(''),
     rememberMe: 'Se souvenir de moi',
@@ -142,13 +141,13 @@ export const fr: Translations = {
   forgot: {
     title: 'Réinitialiser le mot de passe',
     subtitle:
-      "Saisissez l'e-mail lié à votre compte. Nous enverrons un code pour réinitialiser votre mot de passe",
+      "Saisissez l'e-mail lié à votre compte. Nous enverrons un code pour réinitialiser votre mot de passe.",
     identifier: 'Adresse e-mail',
   },
 
   reset: {
     title: 'Réinitialiser le mot de passe',
-    subtitle: 'Saisissez votre nouveau mot de passe et confirmez-le ci-dessous',
+    subtitle: 'Saisissez votre nouveau mot de passe et confirmez-le ci-dessous.',
     password: ['Mot de passe'].join(''),
     reenterPassword: ['Confirmez le mot de passe'].join(''),
   },
@@ -263,7 +262,7 @@ export const fr: Translations = {
 
   search: {
     title: 'Trouver des soins',
-    subtitle: 'Réservez des médecins et infirmiers vérifiés près de chez vous',
+    subtitle: 'Réservez des médecins et infirmiers vérifiés près de chez vous.',
     searchPlaceholder: 'Rechercher par nom ou spécialité…',
     allProfessions: 'Tous',
     consultation: 'Type de consultation',
@@ -279,7 +278,11 @@ export const fr: Translations = {
       name: 'Nom A–Z',
       recency: 'Nouveautés',
     },
-    resultsCount: '{{count}} praticien(s) trouvé(s)',
+    // Variantes de pluriel dans les DEUX locales (même convention que
+    // otp.digitsEntered) : « praticien(s) » entre parenthèses n'est pas de
+    // la copie utilisateur, c'est un artefact de développeur.
+    resultsCount_one: '{{count}} praticien trouvé',
+    resultsCount_other: '{{count}} praticiens trouvés',
     loadMore: 'Charger plus',
     noResultsTitle: 'Aucun praticien trouvé',
     noResultsMessage: 'Essayez de modifier votre recherche ou de retirer un filtre.',
@@ -296,6 +299,7 @@ export const fr: Translations = {
     noBio: 'Ce praticien n’a pas encore ajouté de présentation.',
     consultationOptions: 'Options de consultation',
     minutes: '{{count}} min',
+    feeFrom: 'À partir de {{amount}} XAF',
     languages: 'Langues',
     locations: 'Lieux de pratique',
     qualifications: 'Diplômes et qualifications',
@@ -576,10 +580,10 @@ export const fr: Translations = {
       'Créez votre profil praticien. Les patients pourront vous trouver et réserver dès que vos documents seront validés.',
     roleLabel: 'Vous vous inscrivez en tant que',
     roleDoctor: 'Médecin',
-    roleNurse: 'Infirmier(ère)',
+    roleNurse: 'Infirmier',
     professionLabel: 'Profession',
     surname: 'Nom',
-    givenNames: 'Prénom(s)',
+    givenNames: 'Prénoms',
     locationLabel: 'Ville / région (facultatif)',
     locationPlaceholder: 'p. ex. Douala',
     submit: 'Créer le profil praticien',

@@ -126,7 +126,7 @@ export default function OnboardingScreen() {
         />
         <View style={styles.footer}>
           <Text variant="caption" color="textMuted">
-            {t('onboarding.practitionerPrompt')}{' '}
+            {t('onboarding.practitionerPrompt')}
           </Text>
           <Link
             label={t('onboarding.signUp')}
@@ -154,9 +154,11 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   footer: {
-    flexDirection: 'row',
+    // Column, not row: the caption is a multi-sentence explanation that wraps
+    // over lines under font scaling — the link reads as the action line below.
+    flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 4,
     marginTop: 4,
   },
 });

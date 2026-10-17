@@ -2,12 +2,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import {
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  View,
+  type ListRenderItemInfo,
+} from 'react-native';
 
 import { consultationTypeParam, referenceService, searchService, isApiError } from '@/api';
 import { PractitionerCardView, professionLabelOf } from '@/components/practitioners';
 import { Button, Chip, Input, Screen, Select, Spinner, Text } from '@/components/ui';
-import { EmptyState } from '@/components/feedback';
+import { Banner, EmptyState } from '@/components/feedback';
 import { CONSULTATION_TYPE_KEYS } from '@/constants';
 import { useAsync, useDebounce } from '@/hooks';
 import { useTheme } from '@/theme';
@@ -93,6 +99,9 @@ export default function SearchScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
+  // Bumped by the retry action: the fetch effect is keyed on [queryKey, page],
+  // so a retry that changes neither would never re-issue the failed request.
+  const [reloadToken, setReloadToken] = useState(0);
 
   const professions = useAsync(() => referenceService.professions({ limit: 50 }), []);
 
@@ -154,7 +163,7 @@ export default function SearchScreen() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryKey, page]);
+  }, [queryKey, page, reloadToken]);
 
   const toggleConsultationType = useCallback((type: ConsultationType) => {
     setConsultationTypes((prev) =>
@@ -189,144 +198,189 @@ export default function SearchScreen() {
     consultationTypes.length > 0 ||
     sort !== 'rating';
 
+  // Error recovery re-issues the failed request with the filters untouched —
+  // "Clear filters" was the only CTA before (ui-quality gate), which destroyed
+  // the user's work and read as nonsense on a first-load failure.
+  const retry = useCallback(() => setReloadToken((token) => token + 1), []);
+
+  const renderItem = useCallback(
+    ({ item }: ListRenderItemInfo<PractitionerCard>) => (
+      <PractitionerCardView
+        item={item}
+        professionLabel={professionLabel(item.profession)}
+        onPress={() => router.push(`/practitioner/${item.id}`)}
+      />
+    ),
+    [professionLabel],
+  );
+
   return (
-    <Screen contentStyle={{ gap: theme.spacing.md }}>
-      <View style={styles.header}>
-        <Text variant="title">{t('search.title')}</Text>
-        <Text variant="body" color="textMuted">
-          {t('search.subtitle')}
-        </Text>
-      </View>
+    <Screen scroll={false}>
+      {/* The FlatList owns scrolling so result rows virtualize — "Load more"
+          grows the list unbounded and this is the highest-traffic discovery
+          surface on low-end Android (the appointments-tab pattern). */}
+      <FlatList
+        data={items}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <>
+            <View style={styles.header}>
+              <Text variant="title">{t('search.title')}</Text>
+              <Text variant="body" color="textMuted">
+                {t('search.subtitle')}
+              </Text>
+            </View>
 
-      <Input
-        placeholder={t('search.searchPlaceholder')}
-        value={q}
-        onChangeText={setQ}
-        autoCapitalize="none"
-        returnKeyType="search"
-      />
-
-      {/* Profession filter — single-select (the API takes one professionId).
-          A specialty pre-filter (home category chip) leads the row as a
-          removable selected chip so the active filter is always visible.
-          Every chip is the kit primitive (Review 014 MAJOR-2): selected state
-          exposed to screen readers, 48dp target, pressed feedback. */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.chipRow}
-        contentContainerStyle={styles.chipRowContent}
-      >
-        {specialty !== null && category !== null ? (
-          <Chip
-            label={t(`home.categories.${category}`)}
-            selected
-            onPress={() => setSpecialty(null)}
-          />
-        ) : null}
-        <Chip
-          label={t('search.allProfessions')}
-          selected={professionId === null && specialty === null}
-          onPress={() => {
-            setProfessionId(null);
-            setSpecialty(null);
-          }}
-        />
-        {(professions.data?.data ?? []).map((profession) => (
-          <Chip
-            key={profession.id}
-            label={professionLabel(profession)}
-            selected={professionId === profession.id}
-            onPress={() =>
-              setProfessionId((prev) => (prev === profession.id ? null : profession.id))
-            }
-          />
-        ))}
-      </ScrollView>
-
-      {/* Consultation types — genuine multi-select (comma-joined for the API). */}
-      <View style={styles.filterSection}>
-        <Text variant="label" color="textMuted">
-          {t('search.consultation')}
-        </Text>
-        <View style={styles.chipWrap}>
-          {CONSULTATION_TYPES.map((type) => (
-            <Chip
-              key={type}
-              label={consultationLabel(type)}
-              selected={consultationTypes.includes(type)}
-              onPress={() => toggleConsultationType(type)}
+            <Input
+              placeholder={t('search.searchPlaceholder')}
+              value={q}
+              onChangeText={setQ}
+              autoCapitalize="none"
+              returnKeyType="search"
             />
-          ))}
-        </View>
-      </View>
 
-      <Select<PractitionerSort>
-        label={t('search.sortBy')}
-        title={t('search.sortBy')}
-        value={sort}
-        onChange={setSort}
-        options={SORT_OPTIONS.map((option) => ({ label: t(option.key), value: option.value }))}
-      />
+            {/* Profession filter — single-select (the API takes one professionId).
+                A specialty pre-filter (home category chip) leads the row as a
+                removable selected chip so the active filter is always visible.
+                Every chip is the kit primitive (Review 014 MAJOR-2): selected state
+                exposed to screen readers, 48dp target, pressed feedback. */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.chipRow}
+              contentContainerStyle={styles.chipRowContent}
+            >
+              {specialty !== null && category !== null ? (
+                <Chip
+                  label={t(`home.categories.${category}`)}
+                  selected
+                  onPress={() => setSpecialty(null)}
+                />
+              ) : null}
+              <Chip
+                label={t('search.allProfessions')}
+                selected={professionId === null && specialty === null}
+                onPress={() => {
+                  setProfessionId(null);
+                  setSpecialty(null);
+                }}
+              />
+              {(professions.data?.data ?? []).map((profession) => (
+                <Chip
+                  key={profession.id}
+                  label={professionLabel(profession)}
+                  selected={professionId === profession.id}
+                  onPress={() =>
+                    setProfessionId((prev) => (prev === profession.id ? null : profession.id))
+                  }
+                />
+              ))}
+            </ScrollView>
 
-      {meta ? (
-        <Text variant="caption" color="textMuted">
-          {t('search.resultsCount', { count: meta.total })}
-        </Text>
-      ) : null}
+            {/* Consultation types — genuine multi-select (comma-joined for the API). */}
+            <View style={styles.filterSection}>
+              <Text variant="label" color="textMuted">
+                {t('search.consultation')}
+              </Text>
+              <View style={styles.chipWrap}>
+                {CONSULTATION_TYPES.map((type) => (
+                  <Chip
+                    key={type}
+                    label={consultationLabel(type)}
+                    selected={consultationTypes.includes(type)}
+                    onPress={() => toggleConsultationType(type)}
+                  />
+                ))}
+              </View>
+            </View>
 
-      {isLoading ? (
-        <View style={{ alignItems: 'center', marginTop: theme.spacing.xl }}>
-          <Spinner />
-        </View>
-      ) : null}
-
-      {!isLoading && error ? (
-        <View style={{ gap: theme.spacing.md }}>
-          <Text variant="body" color="dangerText">
-            {error.message}
-          </Text>
-          <Button title={t('search.clearFilters')} variant="outline" onPress={clearFilters} />
-        </View>
-      ) : null}
-
-      {!isLoading && !error && items.length === 0 ? (
-        <EmptyState
-          title={t('search.noResultsTitle')}
-          message={t('search.noResultsMessage')}
-          icon={<Ionicons name="search-outline" size={48} color={theme.colors.textMuted} />}
-          actionLabel={hasActiveFilters ? t('search.clearFilters') : undefined}
-          onAction={hasActiveFilters ? clearFilters : undefined}
-        />
-      ) : null}
-
-      {!isLoading && !error
-        ? items.map((item) => (
-            <PractitionerCardView
-              key={item.id}
-              item={item}
-              professionLabel={professionLabel(item.profession)}
-              onPress={() => router.push(`/practitioner/${item.id}`)}
+            <Select<PractitionerSort>
+              label={t('search.sortBy')}
+              title={t('search.sortBy')}
+              value={sort}
+              onChange={setSort}
+              options={SORT_OPTIONS.map((option) => ({ label: t(option.key), value: option.value }))}
             />
-          ))
-        : null}
 
-      {!isLoading && !error && meta?.hasNextPage ? (
-        <Button
-          title={t('search.loadMore')}
-          variant="outline"
-          loading={isLoadingMore}
-          onPress={() => setPage((prev) => prev + 1)}
-        />
-      ) : null}
+            {meta ? (
+              <Text variant="caption" color="textMuted">
+                {t('search.resultsCount', { count: meta.total })}
+              </Text>
+            ) : null}
+          </>
+        }
+        ListEmptyComponent={
+          isLoading ? (
+            <View style={styles.centered}>
+              <Spinner />
+            </View>
+          ) : error ? (
+            <View style={styles.actionBlock}>
+              <Text variant="body" color="dangerText">
+                {error.message}
+              </Text>
+              <Button title={t('common.retry')} variant="outline" onPress={retry} />
+              {hasActiveFilters ? (
+                <Button
+                  title={t('search.clearFilters')}
+                  variant="ghost"
+                  onPress={clearFilters}
+                />
+              ) : null}
+            </View>
+          ) : (
+            <EmptyState
+              title={t('search.noResultsTitle')}
+              message={t('search.noResultsMessage')}
+              icon={<Ionicons name="search-outline" size={48} color={theme.colors.textMuted} />}
+              actionLabel={hasActiveFilters ? t('search.clearFilters') : undefined}
+              onAction={hasActiveFilters ? clearFilters : undefined}
+            />
+          )
+        }
+        ListFooterComponent={
+          isLoading && items.length > 0 ? (
+            // A page-1 refetch with rows already on screen (stale-while-
+            // revalidate) still needs a visible refreshing affordance on 3G.
+            <View style={styles.centered}>
+              <Spinner />
+            </View>
+          ) : error && items.length > 0 ? (
+            // A load-more failure never hides the rows already on screen —
+            // the error surfaces in the footer with a real retry (standard §2
+            // stale-while-revalidate).
+            <View style={styles.actionBlock}>
+              <Banner tone="error" message={error.message} />
+              <Button title={t('common.retry')} variant="outline" onPress={retry} />
+            </View>
+          ) : meta?.hasNextPage ? (
+            <Button
+              title={t('search.loadMore')}
+              variant="outline"
+              loading={isLoadingMore}
+              onPress={() => setPage((prev) => prev + 1)}
+            />
+          ) : null
+        }
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  list: { flex: 1 },
+  // On-scale numeric literals (static block cannot read the hook): gap 12 = md.
+  listContent: { gap: 12, paddingBottom: 12 },
   header: { gap: 4 },
   chipRow: { flexGrow: 0 },
   chipRowContent: { gap: 8, paddingRight: 8 },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   filterSection: { gap: 8 },
+  centered: { alignItems: 'center', marginTop: 24 },
+  actionBlock: { gap: 12 },
 });

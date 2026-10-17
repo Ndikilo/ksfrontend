@@ -74,7 +74,7 @@ export default function PractitionerDetailScreen() {
           </Text>
           <View style={styles.badgeRow}>
             {data.verification.status === 'verified' ? (
-              <Badge label={`✓ ${t('practitioner.verified')}`} tone="success" />
+              <Badge label={t('practitioner.verified')} tone="success" />
             ) : null}
             <Badge label={`${data.rating.average.toFixed(1)} (${data.rating.count})`} tone="primary" />
           </View>
@@ -88,7 +88,11 @@ export default function PractitionerDetailScreen() {
             <FactLine label={t('practitioner.yearsExperience', { years: data.yearsExperience })} />
           ) : null}
           {data.consultationFeeXaf != null ? (
-            <FactLine label={`From ${data.consultationFeeXaf.toLocaleString(i18n.language)} XAF`} />
+            <FactLine
+              label={t('practitioner.feeFrom', {
+                amount: data.consultationFeeXaf.toLocaleString(i18n.language),
+              })}
+            />
           ) : null}
           {data.nextAvailableAt ? (
             <FactLine

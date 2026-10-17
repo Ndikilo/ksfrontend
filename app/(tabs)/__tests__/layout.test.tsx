@@ -93,11 +93,11 @@ describe('Patient tabs layout guard (P7.T1)', () => {
     expect(screen.getByText('Home')).toBeTruthy();
     expect(screen.getByText('Appointments')).toBeTruthy();
     expect(screen.getByText('Chats')).toBeTruthy();
-    expect(screen.getByText('Health Record')).toBeTruthy();
+    expect(screen.getByText('Health record')).toBeTruthy();
     expect(screen.getByText('Account')).toBeTruthy();
     // Find Care is routable but NOT a tab anymore (href: null) — it is
     // reached from the home search entry + category chips instead.
-    expect(screen.queryByText('Find Care')).toBeNull();
+    expect(screen.queryByText('Find care')).toBeNull();
     expect(screen.queryByText('Profile')).toBeNull();
   });
 

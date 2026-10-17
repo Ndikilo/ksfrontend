@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -29,7 +30,7 @@ export type PractitionerCardViewProps = {
  * the in-app language (standard §7 format locale); icons are Ionicons, never
  * emoji (screen readers announce emoji as noise — Review 014 MINOR-5).
  */
-export function PractitionerCardView({
+export const PractitionerCardView = memo(function PractitionerCardView({
   item,
   professionLabel,
   onPress,
@@ -94,7 +95,7 @@ export function PractitionerCardView({
       </Card>
     </Pressable>
   );
-}
+});
 
 /**
  * Localized profession name for a card item — picked by the IN-APP language,
