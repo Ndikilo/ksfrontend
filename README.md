@@ -149,13 +149,28 @@ attached to every `/v1/*` request; sessions are re-validated against
 `/api/auth/get-session` on cold start (an offline device keeps its session; a
 revoked one is cleared).
 
-**Hosted (recommended for device testing):** a one-click Render deployment of
-the API exists on the backend fork — open
-<https://render.com/deploy?repo=https://github.com/Ndikilo/ksbackend>, sign in
-with GitHub, and Render provisions the API + Postgres (free tier, staging
-configuration, migrations run automatically). See the backend's
-`docs/deploy-render.md` for OTP email setup and seeding. Then set
-`expo.extra.apiBaseUrl` in `app.json` to your `https://<app>.onrender.com` URL.
+**Current hosted configuration (2026-10-25):** the web deployment and EAS
+production profile point to `https://16.28.39.251`. `/livez` and `/readyz` were
+reachable during the latest read-only check. The EAS preview profile still
+points to `https://ksbackend-api.onrender.com`; that host did not respond within
+75 seconds during the latest check. Do not assume API health means the backend
+is production-configured: the backend deployment guide requires `APP_ENV=prod`
+and production credentials before real patient data is accepted. See
+`ksbackend/docs/deploy-render.md` and verify the actual deployed environment
+with the backend owner before launch.
+
+The Render blueprint provisions a **staging** API and database, not a production
+service. It can be used for controlled testing after it is reachable. Follow
+`ksbackend/docs/deploy-render.md` to deploy and configure email, storage, and
+seeding; do not use its free staging defaults for real patient data.
+
+**Real-care launch gates:** the app currently has no in-app Terms or Privacy
+routes, and the registration notice's links are not wired to documents. The
+support contact is still a placeholder. Obtain approved legal text and public
+URLs, a real support contact, and the production consent revision before
+accepting patient registrations. A successful health probe does not verify
+email delivery, payment-provider credentials, storage scanning, encryption-key
+configuration, monitoring, backups, or clinical workflow readiness.
 
 1. **Run the backend locally** (from the `ksbackend` repo — needs Bun + Docker):
    ```bash
@@ -166,10 +181,11 @@ configuration, migrations run automatically). See the backend's
    data (professions, languages, demo practitioner). Outgoing email uses Resend —
    see the backend's `docs/local-dev.md`; the OTP codes arrive there.
 
-2. **Point the app at it** — `app.json > expo.extra.apiBaseUrl` defaults to
-   `http://localhost:5000` (the backend's default port). On the **Android
-   emulator** `localhost` is automatically rewritten to `10.0.2.2`; on a
-   **physical device** use your machine's LAN IP instead.
+2. **Point the app at it** — set `EXPO_PUBLIC_API_BASE_URL` or
+   `expo.extra.apiBaseUrl` to the selected API origin. The committed default is
+   `https://16.28.39.251`; local development can use `http://localhost:5000`.
+   On the **Android emulator**, `localhost` is automatically rewritten to
+   `10.0.2.2`; on a **physical device**, use your machine's LAN IP instead.
 
 3. **Web note** — the backend's CORS allow-list (`CORS_ORIGINS` env var) must
    include the Expo web dev origin (e.g. `http://localhost:8081`). Native
