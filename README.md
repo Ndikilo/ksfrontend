@@ -17,8 +17,9 @@ npm run ios      # or: npm run android / npm run web
 npm run typecheck
 ```
 
-Set your backend URL in [`app.json`](app.json) under `expo.extra.apiBaseUrl`
-(read in a typed, single place via [`src/config/env.ts`](src/config/env.ts)).
+Set `EXPO_PUBLIC_API_BASE_URL` in the build environment. Public builds must use
+the verified production API domain with a valid TLS certificate; the current
+temporary IP is not an approved launch endpoint.
 
 ## Project structure
 
@@ -149,13 +150,15 @@ attached to every `/v1/*` request; sessions are re-validated against
 `/api/auth/get-session` on cold start (an offline device keeps its session; a
 revoked one is cleared).
 
-**Current hosted configuration (2026-10-25):** the web deployment and EAS
-production profile point to `https://16.28.39.251`. `/livez` and `/readyz` were
-reachable during the latest read-only check. The EAS preview profile still
-points to `https://ksbackend-api.onrender.com`; that host did not respond within
-75 seconds during the latest check. Do not assume API health means the backend
-is production-configured: the backend deployment guide requires `APP_ENV=prod`
-and production credentials before real patient data is accepted. See
+**Current hosted configuration (2026-10-25):** the existing web deployment
+uses `https://16.28.39.251`, and `/livez` and `/readyz` responded during a
+read-only check. That raw IP is not verified as a durable production endpoint
+with a trusted TLS certificate. The previous EAS preview host,
+`https://ksbackend-api.onrender.com`, did not respond within 75 seconds. Both
+EAS preview and production profiles now require `EXPO_PUBLIC_API_BASE_URL` to be
+configured through the build environment. Do not assume API health means the
+backend is production-configured: the backend deployment guide requires
+`APP_ENV=prod` and production credentials before real patient data is accepted. See
 `ksbackend/docs/deploy-render.md` and verify the actual deployed environment
 with the backend owner before launch.
 
@@ -172,6 +175,21 @@ accepting patient registrations. A successful health probe does not verify
 email delivery, payment-provider credentials, storage scanning, encryption-key
 configuration, monitoring, backups, or clinical workflow readiness.
 
+**Web and app-store release checklist:**
+
+- [ ] Set a durable production API domain and configure it for web and EAS builds.
+- [ ] Provide approved public Terms and Privacy Policy URLs, wire the in-app
+  links, and align the submitted consent revision with the backend.
+- [ ] Replace `support@kanasante.example.com` with a monitored support address.
+- [ ] Complete App Store Connect privacy disclosures and Google Play Data safety
+  and health app declarations from the actual data flows and provider setup.
+- [ ] Configure production email, payments, SMS, storage, monitoring and backups;
+  verify real registration, booking, payment and account deletion on devices.
+- [ ] Set up EAS project ownership/credentials and store listings, then create
+  iOS and Android release builds and complete TestFlight/internal-track QA.
+- [ ] Promote the web build only after API, legal, operational and clinical
+  launch gates are signed off by their owners.
+
 1. **Run the backend locally** (from the `ksbackend` repo — needs Bun + Docker):
    ```bash
    bun run setup   # deps, .env.local, Postgres, env validation
@@ -181,9 +199,9 @@ configuration, monitoring, backups, or clinical workflow readiness.
    data (professions, languages, demo practitioner). Outgoing email uses Resend —
    see the backend's `docs/local-dev.md`; the OTP codes arrive there.
 
-2. **Point the app at it** — set `EXPO_PUBLIC_API_BASE_URL` or
-   `expo.extra.apiBaseUrl` to the selected API origin. The committed default is
-   `https://16.28.39.251`; local development can use `http://localhost:5000`.
+2. **Point the app at it** — set `EXPO_PUBLIC_API_BASE_URL` to the selected API
+   origin in the environment for each build profile. Local development can use
+   `http://localhost:5000`.
    On the **Android emulator**, `localhost` is automatically rewritten to
    `10.0.2.2`; on a **physical device**, use your machine's LAN IP instead.
 
@@ -355,10 +373,10 @@ upload manually: `npx sentry-expo-upload-sourcemaps dist`.
 ## Build profiles (EAS)
 
 [`eas.json`](eas.json) defines `development` (dev client, local API),
-`preview` (internal distribution, staging API), and `production`. Each profile
-sets `EXPO_PUBLIC_API_BASE_URL`, which [`src/config/env.ts`](src/config/env.ts)
-prefers over `app.json > expo.extra.apiBaseUrl`, so one config serves every
-environment. Validate a profile without building:
+`preview` (internal distribution), and `production`. Preview and production
+require an environment-specific `EXPO_PUBLIC_API_BASE_URL`; the development
+profile supplies its local endpoint. [`src/config/env.ts`](src/config/env.ts)
+reads that variable. Validate a profile without building:
 `eas build --profile production --platform android --local` (requires `eas login`).
 
 ## Over-the-air updates (expo-updates)

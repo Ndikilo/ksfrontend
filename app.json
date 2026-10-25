@@ -12,10 +12,12 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "cm.kanasante.app"
+      "bundleIdentifier": "cm.kanasante.app",
+      "buildNumber": "1"
     },
     "android": {
       "package": "cm.kanasante.app",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",

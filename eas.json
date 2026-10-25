@@ -11,15 +11,17 @@
     "preview": {
       "distribution": "internal",
       "channel": "preview",
-      "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://ksbackend-api.onrender.com"
-      }
+      "env": {}
     },
     "production": {
       "channel": "production",
-      "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://16.28.39.251"
-      }
+      "env": {}
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {},
+      "android": {}
     }
   }
 }
