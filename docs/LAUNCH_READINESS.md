@@ -8,6 +8,8 @@ must not be treated as the feature inventory of this product.
 
 - Initial iOS build number and Android version code are configured.
 - Android cleartext network traffic is disabled.
+- Corrected Vercel's SPA fallback to `/` when `cleanUrls` is enabled. Live root
+  requests worked but `/login` returned 404 before this fix.
 - EAS preview and production builds require an explicit HTTPS API domain.
   A missing setting can no longer silently select the temporary API IP.
 - EAS production builds also require HTTPS Terms and Privacy URLs and a
@@ -32,6 +34,11 @@ must not be treated as the feature inventory of this product.
 | Web, Android and iOS bundle exports | Passed |
 | Signed native builds and device QA | Not completed; account setup and launch inputs needed |
 | Production hosting inspection | Render and Vercel connectors returned unavailable |
+
+GitHub CI passed for both product repositories at 58bfca3, and Vercel reported
+its production deployment successful. A read-only HTTPS readiness check of the
+temporary API IP returned HTTP 200 with TLS verification enabled on 2026-10-29;
+this does not verify production credentials or patient workflows.
 
 Jest reports an existing open-handle warning after tests finish; the process
 exits successfully. Sentry export warns that organization/project are absent,
