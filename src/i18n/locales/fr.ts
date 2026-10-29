@@ -153,6 +153,7 @@ export const fr: Translations = {
   },
 
   terms: {
+    unavailable: 'Ce document est actuellement indisponible. Veuillez réessayer plus tard.',
     prefix: 'En vous inscrivant, vous reconnaissez avoir lu et accepté nos',
     terms: 'Conditions générales',
     and: 'et',

@@ -148,6 +148,7 @@ export const en = {
   },
 
   terms: {
+    unavailable: 'This document is currently unavailable. Please try again later.',
     prefix: "By registering, you acknowledge that you've read and agree to our",
     terms: 'Terms & Conditions',
     and: 'and',

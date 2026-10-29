@@ -20,6 +20,9 @@ type Extra = {
    * disables error reporting entirely. See src/utils/sentry.ts.
    */
   sentryDsn?: string;
+  termsUrl?: string;
+  privacyUrl?: string;
+  supportEmail?: string;
 };
 
 const extra = (Constants.expoConfig?.extra ?? {}) as Extra;
@@ -118,4 +121,7 @@ export const env = {
   mockAuth: guardMockAuth(extra.mockAuth ?? false),
   /** Sentry error-reporting DSN; '' = reporting disabled (see src/utils/sentry.ts). */
   sentryDsn: extra.sentryDsn ?? '',
+  termsUrl: extra.termsUrl ?? '',
+  privacyUrl: extra.privacyUrl ?? '',
+  supportEmail: extra.supportEmail ?? '',
 } as const;

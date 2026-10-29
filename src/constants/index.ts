@@ -3,6 +3,8 @@
  * are discoverable via autocomplete and impossible to typo at call sites.
  */
 
+import { env } from '@/config/env';
+
 /** Keys used with the secure `storage` util. Centralised to avoid collisions. */
 export const StorageKeys = {
   authSession: 'auth.session',
@@ -17,7 +19,7 @@ export const StorageKeys = {
 /** Query-param / analytics event names, timeouts, etc. can live here too. */
 export const AppConfig = {
   appName: 'Kana Sante',
-  supportEmail: 'support@kanasante.example.com',
+  supportEmail: env.supportEmail,
   minPasswordLength: 8,
   /**
    * Terms/consent version accepted when completing the patient profile —

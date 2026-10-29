@@ -167,10 +167,9 @@ service. It can be used for controlled testing after it is reachable. Follow
 `ksbackend/docs/deploy-render.md` to deploy and configure email, storage, and
 seeding; do not use its free staging defaults for real patient data.
 
-**Real-care launch gates:** the app currently has no in-app Terms or Privacy
-routes, and the registration notice's links are not wired to documents. The
-support contact is still a placeholder. Obtain approved legal text and public
-URLs, a real support contact, and the production consent revision before
+**Real-care launch gates:** the registration notice now opens the public Terms
+and Privacy URLs configured at build time, but approved documents and URLs have
+not been supplied. Configure a real support contact and the production consent revision before
 accepting patient registrations. A successful health probe does not verify
 email delivery, payment-provider credentials, storage scanning, encryption-key
 configuration, monitoring, backups, or clinical workflow readiness.
@@ -178,9 +177,9 @@ configuration, monitoring, backups, or clinical workflow readiness.
 **Web and app-store release checklist:**
 
 - [ ] Set a durable production API domain and configure it for web and EAS builds.
-- [ ] Provide approved public Terms and Privacy Policy URLs, wire the in-app
-  links, and align the submitted consent revision with the backend.
-- [ ] Replace `support@kanasante.example.com` with a monitored support address.
+- [ ] Provide approved public Terms and Privacy Policy URLs and align the
+  submitted consent revision with the backend.
+- [ ] Configure a monitored support address.
 - [ ] Complete App Store Connect privacy disclosures and Google Play Data safety
   and health app declarations from the actual data flows and provider setup.
 - [ ] Configure production email, payments, SMS, storage, monitoring and backups;
@@ -376,8 +375,25 @@ upload manually: `npx sentry-expo-upload-sourcemaps dist`.
 `preview` (internal distribution), and `production`. Preview and production
 require an environment-specific `EXPO_PUBLIC_API_BASE_URL`; the development
 profile supplies its local endpoint. [`src/config/env.ts`](src/config/env.ts)
-reads that variable. Validate a profile without building:
-`eas build --profile production --platform android --local` (requires `eas login`).
+reads that variable. `app.config.js` rejects EAS preview and production builds
+without an explicit HTTPS API domain, and rejects production builds without the
+following public configuration (none of these values is a secret):
+
+| Variable | Required value |
+|---|---|
+| `EXPO_PUBLIC_API_BASE_URL` | Verified production API origin |
+| `EXPO_PUBLIC_TERMS_URL` | Approved, publicly accessible HTTPS Terms URL |
+| `EXPO_PUBLIC_PRIVACY_URL` | Approved, publicly accessible HTTPS Privacy URL |
+| `EXPO_PUBLIC_SUPPORT_EMAIL` | Monitored support address |
+
+Set these in the corresponding EAS environment and in Vercel for the web build.
+These checks validate configuration format; they do not establish ownership,
+legal approval, reachability, or production service readiness. Local development
+and the existing web build retain the `app.json` fallback until their build
+environment is configured. Set `EAS_BUILD_PROFILE=production` when evaluating
+`npx expo config --type public` locally to exercise the production gates. Run
+`eas build --profile production --platform all` only after project ownership,
+credentials, and launch inputs are ready; it creates actual builds.
 
 ## Over-the-air updates (expo-updates)
 
